@@ -45,18 +45,19 @@ class TableView(tk.Frame):
         """完全重建表格"""
         # 清除旧数据
         self.tree.delete(*self.tree.get_children())
-        cols = self.tree["columns"]
-        self.tree["displaycolumns"] = ()
 
         if not matrix:
             return
 
-        num_cols = len(matrix[0]) if matrix else 0
+        num_cols = len(matrix[0])
         if num_cols == 0:
             return
 
         # 设置列：col0 = 行号, col1..colN = A, B, C...
-        self.tree["columns"] = [f"col_{i}" for i in range(num_cols)]
+        new_cols = [f"col_{i}" for i in range(num_cols)]
+        self.tree["columns"] = new_cols
+        # 显示所有数据列（不设置 displaycolumns 会导致之前隐藏的列不可见）
+        self.tree["displaycolumns"] = new_cols
 
         # 行号列宽度根据最大行号动态计算
         max_row = len(matrix)
