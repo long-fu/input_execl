@@ -1,4 +1,5 @@
 """Excel 文件读写处理"""
+from __future__ import annotations
 from pathlib import Path
 from openpyxl import Workbook, load_workbook
 
@@ -39,10 +40,11 @@ class ExcelHandler:
         """写入单元格，col/row 从 1 开始"""
         self.sheet.cell(row=row, column=col, value=value)
 
-    def read_cell(self, col: int, row: int):
-        """读取单元格值，返回字符串或 None"""
+    def read_cell(self, col: int, row: int) -> str:
+        """读取单元格值，返回字符串"""
         cell = self.sheet.cell(row=row, column=col)
-        return cell.value
+        val = cell.value
+        return val if val is not None else ""
 
     def get_matrix(self) -> list[list]:
         """获取整个数据区域的二维矩阵
@@ -60,7 +62,7 @@ class ExcelHandler:
         return matrix
 
     def save(self):
-        """保存到当前文件，如未指定路径则调用 save_as"""
+        """保存到当前文件，如未指定路径则抛出 ValueError"""
         if self._filepath:
             self._wb.save(self._filepath)
         else:
