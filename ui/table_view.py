@@ -9,6 +9,7 @@ class TableView(tk.Frame):
         self._on_cell_click = on_cell_click
         self._data: list[list] = []
         self._current_highlight: tuple[int, int] | None = None
+        self._handler = None
 
         # 滚动条
         self.v_scroll = ttk.Scrollbar(self, orient=tk.VERTICAL)
@@ -19,7 +20,7 @@ class TableView(tk.Frame):
             self,
             yscrollcommand=self.v_scroll.set,
             xscrollcommand=self.h_scroll.set,
-            show="headings",
+            show="tree headings",
         )
         self.v_scroll.config(command=self.tree.yview)
         self.h_scroll.config(command=self.tree.xview)
@@ -65,15 +66,12 @@ class TableView(tk.Frame):
             return
 
         # 设置列：col0 = 行号, col1..colN = A, B, C...
-        column_ids = ["#0"]  # row header placeholder
-        display_cols = []
-        for i in range(num_cols):
-            col_id = f"col_{i}"
-            column_ids.append(col_id)
-            display_cols.append(col_id)
+        self.tree["columns"] = [f"col_{i}" for i in range(num_cols)]
 
-        self.tree["columns"] = column_ids[1:]  # tkinter columns excludes #0
-        self.tree.column("#0", width=50, anchor="center")
+        # 行号列宽度根据最大行号动态计算
+        max_row = len(matrix)
+        row_header_width = max(50, len(str(max_row)) * 12 + 20)
+        self.tree.column("#0", width=row_header_width, anchor="center")
         self.tree.heading("#0", text="")
 
         for i in range(num_cols):
@@ -112,7 +110,6 @@ class TableView(tk.Frame):
             old_col, old_row = self._current_highlight
             try:
                 row_id = str(old_row)
-                col_id = f"col_{old_col - 1}"
                 if self.tree.exists(row_id):
                     self.tree.tag_del(f"highlight_{old_row}_{old_col}")
             except Exception:
@@ -121,7 +118,6 @@ class TableView(tk.Frame):
         # 设置新高亮
         try:
             row_id = str(row)
-            col_id = f"col_{col - 1}"
             tag = f"highlight_{row}_{col}"
             self.tree.tag_configure(tag, background="#cce5ff")
             self.tree.item(row_id, tags=(tag,))

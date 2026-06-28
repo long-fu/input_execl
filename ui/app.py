@@ -150,7 +150,7 @@ class App:
         self.input_bar.clear_value()
         self.input_bar.focus_value()
 
-        self._update_status(f"已写入 {self._col_letter(col)}{row} = {value}")
+        self._update_status(f"已写入 {self.table_view._column_letter(col)}{row} = {value}")
 
     def _on_cell_change(self, col: int, row: int):
         """输入栏列号/行号变化时高亮对应单元格"""
@@ -186,18 +186,9 @@ class App:
         fp = self.handler.filepath
         name = fp.split("/")[-1] if fp else "未命名"
         saved = "已保存" if fp else "未保存"
-        pos = f"{self._col_letter(self.navigator.col)}{self.navigator.row}"
+        pos = f"{self.table_view._column_letter(self.navigator.col)}{self.navigator.row}"
         mode_label = MODE_LABELS.get(self.navigator.mode, self.navigator.mode)
         self.status_var.set(
             f"  {name} | {saved} | 位置: {pos} | 模式: {mode_label}"
             + (f" | {msg}" if msg else "")
         )
-
-    @staticmethod
-    def _col_letter(n: int) -> str:
-        result = ""
-        while n > 0:
-            n -= 1
-            result = chr(n % 26 + ord("A")) + result
-            n //= 26
-        return result
