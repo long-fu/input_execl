@@ -1,4 +1,4 @@
-"""表格视图组件 — 基于 ttk.Treeview 展示 Excel 内容"""
+"""表格视图组件 — Canvas + Label 网格，支持单格高亮"""
 from __future__ import annotations
 
 import tkinter as tk
@@ -6,44 +6,79 @@ from tkinter import ttk
 
 from core.utils import col_letter
 
+CELL_W = 80    # 数据列宽
+CELL_H = 28    # 行高
+ROW_NO_W = 50  # 行号列宽
+HEADER_H = 26  # 表头高
+
 
 class TableView(tk.Frame):
     def __init__(self, parent, on_cell_click: callable):
         super().__init__(parent)
         self._on_cell_click = on_cell_click
+        self._matrix: list[list] = []
         self._current_highlight: tuple[int, int] | None = None
+        self._cell_widgets: dict[tuple[int, int], tk.Label] = {}
+        self._header_widgets: list[tk.Label] = []
 
-        # 滚动条
-        self.v_scroll = ttk.Scrollbar(self, orient=tk.VERTICAL)
-        self.h_scroll = ttk.Scrollbar(self, orient=tk.HORIZONTAL)
+        # 顶部固定表头
+        self._header_frame = tk.Frame(self, bg="#e8e8e8")
+        self._header_frame.pack(fill=tk.X, side=tk.TOP)
 
-        # Treeview
-        self.tree = ttk.Treeview(
-            self,
-            yscrollcommand=self.v_scroll.set,
-            xscrollcommand=self.h_scroll.set,
-            show="headings",
-        )
-        self.v_scroll.config(command=self.tree.yview)
-        self.h_scroll.config(command=self.tree.xview)
+        # Canvas + 滚动
+        self.canvas = tk.Canvas(self, bg="white", highlightthickness=0)
+        self.scroll_y = ttk.Scrollbar(self, orient=tk.VERTICAL, command=self.canvas.yview)
+        self.scroll_x = ttk.Scrollbar(self, orient=tk.HORIZONTAL, command=self.canvas.xview)
+        self.canvas.configure(yscrollcommand=self.scroll_y.set, xscrollcommand=self.scroll_x.set)
 
-        # 布局
-        self.tree.grid(row=0, column=0, sticky="nsew")
-        self.v_scroll.grid(row=0, column=1, sticky="ns")
-        self.h_scroll.grid(row=1, column=0, sticky="ew")
-        self.grid_rowconfigure(0, weight=1)
-        self.grid_columnconfigure(0, weight=1)
+        self._grid_frame = tk.Frame(self.canvas, bg="white")
+        self._canvas_win = self.canvas.create_window((0, 0), window=self._grid_frame, anchor="nw")
 
-        # 绑定点击
-        self.tree.bind("<ButtonRelease-1>", self._on_click)
+        self.canvas.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
+        self.scroll_y.pack(fill=tk.Y, side=tk.RIGHT)
+        self.scroll_x.pack(fill=tk.X, side=tk.BOTTOM)
+
+        # 滚动事件
+        self._grid_frame.bind("<Configure>", self._on_frame_configure)
+        self.canvas.bind("<Enter>", self._bind_mousewheel)
+        self.canvas.bind("<Leave>", self._unbind_mousewheel)
+
+    def _bind_mousewheel(self, event):
+        self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
+        self.canvas.bind_all("<Button-4>", self._on_mousewheel)
+        self.canvas.bind_all("<Button-5>", self._on_mousewheel)
+
+    def _unbind_mousewheel(self, event):
+        self.canvas.unbind_all("<MouseWheel>")
+        self.canvas.unbind_all("<Button-4>")
+        self.canvas.unbind_all("<Button-5>")
+
+    def _on_mousewheel(self, event):
+        if event.num == 4 or event.delta > 0:
+            self.canvas.yview_scroll(-1, "units")
+        elif event.num == 5 or event.delta < 0:
+            self.canvas.yview_scroll(1, "units")
+
+    def _on_frame_configure(self, event):
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
 
     def _column_letter(self, n: int) -> str:
-        """数字列号 → 字母列号（1→A, 27→AA）"""
         return col_letter(n)
 
     def refresh(self, matrix: list[list], handler):
-        """完全重建表格"""
-        self.tree.delete(*self.tree.get_children())
+        """重建表格"""
+        self._matrix = matrix
+        self._current_highlight = None
+
+        # 清除旧控件
+        for w in self._header_widgets:
+            w.destroy()
+        self._header_widgets.clear()
+        for w in self._cell_widgets.values():
+            w.destroy()
+        self._cell_widgets.clear()
+        for child in self._grid_frame.winfo_children():
+            child.destroy()
 
         if not matrix:
             return
@@ -52,84 +87,95 @@ class TableView(tk.Frame):
         if num_cols == 0:
             return
 
-        # 列：行号 + 分隔线 + A, B, C, ...
-        all_cols = ["col_row", "col_sep"] + [f"col_{i}" for i in range(num_cols)]
-        self.tree["columns"] = all_cols
-        self.tree["displaycolumns"] = all_cols
+        # ── 表头 ──
+        # 行号表头
+        h = tk.Label(self._header_frame, text="行号", width=6,
+                     bg="#e8e8e8", fg="#555", font=("", 9, "bold"),
+                     relief=tk.GROOVE, borderwidth=1)
+        h.pack(side=tk.LEFT)
+        self._header_widgets.append(h)
 
-        # 行号列
-        self.tree.column("col_row", width=55, anchor="center", stretch=False)
-        self.tree.heading("col_row", text="行号")
+        # 分隔线
+        sep = tk.Label(self._header_frame, text="", width=1, bg="#d0d0d0")
+        sep.pack(side=tk.LEFT)
+        self._header_widgets.append(sep)
 
-        # 分隔线 — 窄空白列
-        self.tree.column("col_sep", width=6, anchor="center", stretch=False)
-        self.tree.heading("col_sep", text="│")
-
-        # 数据列
+        # 列标题
         for i in range(num_cols):
-            col_id = f"col_{i}"
             letter = self._column_letter(i + 1)
-            self.tree.column(col_id, width=80, anchor="center", minwidth=60)
-            self.tree.heading(col_id, text=letter)
+            h = tk.Label(self._header_frame, text=letter, width=10,
+                         bg="#e8e8e8", fg="#333", font=("", 9, "bold"),
+                         relief=tk.GROOVE, borderwidth=1)
+            h.pack(side=tk.LEFT)
+            self._header_widgets.append(h)
 
-        # 插入行
+        # ── 数据行 ──
         for r_idx, row_data in enumerate(matrix):
             row_num = r_idx + 1
-            # 行号 + ""(分隔线) + 数据
-            values = [str(row_num), ""] + [
-                str(v) if v is not None else "" for v in row_data
-            ]
-            self.tree.insert("", tk.END, iid=str(row_num), values=values)
+            row_frame = tk.Frame(self._grid_frame, bg="white")
+            row_frame.pack(fill=tk.X)
 
-    def _on_click(self, event):
-        """点击单元格 → 解析行列 → 回调"""
-        region = self.tree.identify_region(event.x, event.y)
-        if region != "cell":
-            return
+            # 行号
+            rlbl = tk.Label(row_frame, text=str(row_num), width=6,
+                            bg="#f5f5f5", fg="#888",
+                            relief=tk.GROOVE, borderwidth=1,
+                            font=("", 9))
+            rlbl.pack(side=tk.LEFT)
+            self._cell_widgets[(r_idx, 0)] = rlbl  # col=0 表示行号
 
-        row_id = self.tree.identify_row(event.y)
-        col_id = self.tree.identify_column(event.x)
+            # 分隔线
+            sep = tk.Label(row_frame, text="", width=1, bg="#e0e0e0", relief=tk.FLAT)
+            sep.pack(side=tk.LEFT)
+            self._cell_widgets[(r_idx, -1)] = sep
 
-        if not row_id or not col_id:
-            return
+            # 数据单元格
+            for c_idx, val in enumerate(row_data):
+                text = str(val) if val is not None else ""
+                # 截断过长文本
+                display = text[:15] + "…" if len(text) > 16 else text
 
-        row = int(row_id)
-        # col_id 格式 "#N": #1=行号, #2=分隔线, #3=A, #4=B, ...
-        # Excel 列号 = N - 2
-        col = int(col_id.lstrip("#")) - 2
+                lbl = tk.Label(row_frame, text=display, width=10,
+                               bg="white", fg="#222",
+                               relief=tk.GROOVE, borderwidth=1,
+                               font=("", 9),
+                               anchor="center")
+                lbl.pack(side=tk.LEFT)
 
-        if col <= 0:
-            return  # 点击行号或分隔线，忽略
+                # 绑定点击
+                excel_col = c_idx + 1
+                excel_row = row_num
+                lbl.bind("<Button-1>",
+                         lambda e, c=excel_col, r=excel_row: self._on_label_click(c, r))
 
+                self._cell_widgets[(r_idx, c_idx + 1)] = lbl
+
+    def _on_label_click(self, col: int, row: int):
+        """单元格被点击"""
+        self.highlight(col, row)
         self._on_cell_click(col, row)
 
     def highlight(self, col: int, row: int):
-        """高亮指定单元格"""
-        # 清除旧高亮
+        """高亮单个单元格 — 深色边框 + 浅蓝底色"""
+        # 还原旧高亮
         if self._current_highlight:
             old_col, old_row = self._current_highlight
-            try:
-                row_id = str(old_row)
-                if self.tree.exists(row_id):
-                    self.tree.tag_del(f"highlight_{old_row}_{old_col}")
-            except Exception:
-                pass
+            old_key = (old_row - 1, old_col)
+            if old_key in self._cell_widgets:
+                lbl = self._cell_widgets[old_key]
+                lbl.configure(bg="white", relief=tk.GROOVE, borderwidth=1)
 
         # 设置新高亮
-        try:
-            row_id = str(row)
-            tag = f"highlight_{row}_{col}"
-            self.tree.tag_configure(tag, background="#cce5ff")
-            self.tree.item(row_id, tags=(tag,))
+        key = (row - 1, col)
+        if key in self._cell_widgets:
+            lbl = self._cell_widgets[key]
+            lbl.configure(bg="#cce5ff", relief=tk.SOLID, borderwidth=2)
             self._current_highlight = (col, row)
-        except Exception:
-            pass
 
     def scroll_to(self, col: int, row: int):
-        """滚动到指定单元格可见"""
-        try:
-            row_id = str(row)
-            if self.tree.exists(row_id):
-                self.tree.see(row_id)
-        except Exception:
-            pass
+        """滚动到指定行"""
+        # 估算 y 位置
+        y = (row - 1) * (CELL_H + 2)  # 2px pack spacing
+        total_h = len(self._matrix) * (CELL_H + 2)
+        if total_h > 0:
+            fraction = max(0, min(1, y / total_h))
+            self.canvas.yview_moveto(fraction)
