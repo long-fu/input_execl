@@ -17,12 +17,12 @@ class TableView(tk.Frame):
         self.v_scroll = ttk.Scrollbar(self, orient=tk.VERTICAL)
         self.h_scroll = ttk.Scrollbar(self, orient=tk.HORIZONTAL)
 
-        # Treeview
+        # Treeview — 使用 show="headings"，行号作为首列数据列
         self.tree = ttk.Treeview(
             self,
             yscrollcommand=self.v_scroll.set,
             xscrollcommand=self.h_scroll.set,
-            show="tree headings",
+            show="headings",
         )
         self.v_scroll.config(command=self.tree.yview)
         self.h_scroll.config(command=self.tree.xview)
@@ -43,7 +43,6 @@ class TableView(tk.Frame):
 
     def refresh(self, matrix: list[list], handler):
         """完全重建表格"""
-        # 清除旧数据
         self.tree.delete(*self.tree.get_children())
 
         if not matrix:
@@ -53,18 +52,18 @@ class TableView(tk.Frame):
         if num_cols == 0:
             return
 
-        # 设置列：col0 = 行号, col1..colN = A, B, C...
-        new_cols = [f"col_{i}" for i in range(num_cols)]
-        self.tree["columns"] = new_cols
-        # 显示所有数据列（不设置 displaycolumns 会导致之前隐藏的列不可见）
-        self.tree["displaycolumns"] = new_cols
+        # 列：行号 + A, B, C, ...
+        all_cols = ["col_row"] + [f"col_{i}" for i in range(num_cols)]
+        self.tree["columns"] = all_cols
+        self.tree["displaycolumns"] = all_cols
 
-        # 行号列宽度根据最大行号动态计算
+        # 行号列
         max_row = len(matrix)
         row_header_width = max(50, len(str(max_row)) * 12 + 20)
-        self.tree.column("#0", width=row_header_width, anchor="center")
-        self.tree.heading("#0", text="")
+        self.tree.column("col_row", width=row_header_width, anchor="center")
+        self.tree.heading("col_row", text="行号")
 
+        # 数据列
         for i in range(num_cols):
             col_id = f"col_{i}"
             letter = self._column_letter(i + 1)
@@ -74,8 +73,8 @@ class TableView(tk.Frame):
         # 插入行
         for r_idx, row_data in enumerate(matrix):
             row_num = r_idx + 1
-            values = [str(v) if v is not None else "" for v in row_data]
-            self.tree.insert("", tk.END, iid=str(row_num), text=str(row_num), values=values)
+            values = [str(row_num)] + [str(v) if v is not None else "" for v in row_data]
+            self.tree.insert("", tk.END, iid=str(row_num), values=values)
 
     def _on_click(self, event):
         """点击单元格 → 解析行列 → 回调"""
@@ -90,7 +89,12 @@ class TableView(tk.Frame):
             return
 
         row = int(row_id)
-        col = int(col_id.lstrip("#"))  # col_id 是 "#N" 格式
+        # col_id 是 "#N" 格式，#1=行号, #2=A, #3=B, ...
+        # Excel 列号 = col_id_value - 1（因为第一列是行号）
+        col = int(col_id.lstrip("#")) - 1
+
+        if col <= 0:
+            return  # 点击的是行号列，忽略
 
         self._on_cell_click(col, row)
 
