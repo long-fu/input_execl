@@ -226,18 +226,20 @@ class TableView(tk.Frame):
         self.canvas.tag_lower(rect_id)
 
     def scroll_to(self, col: int, row: int):
-        """滚动到指定单元格"""
+        """滚动到指定单元格 — 居中显示"""
         if self._num_rows == 0:
             return
-        # 垂直
+        cw = self.canvas.winfo_width()
+        ch = self.canvas.winfo_height()
+        # 垂直 — 居中
         th = self._total_h()
-        if th > 0:
-            y = self._row_y(row) - HEADER_H
-            fraction_y = max(0, min(1, y / th))
+        if th > ch > 0:
+            y = self._row_y(row) - ch // 2
+            fraction_y = max(0, min(1, y / (th - ch)))
             self.canvas.yview_moveto(fraction_y)
-        # 水平
+        # 水平 — 居中
         tw = self._total_w()
-        if tw > 0:
-            x = self._col_x(col) + COL_W // 2
-            fraction_x = max(0, min(1, x / tw))
+        if tw > cw > 0:
+            x = self._col_x(col) - cw // 2
+            fraction_x = max(0, min(1, x / (tw - cw)))
             self.canvas.xview_moveto(fraction_x)
