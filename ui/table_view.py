@@ -17,7 +17,7 @@ class TableView(tk.Frame):
         self.v_scroll = ttk.Scrollbar(self, orient=tk.VERTICAL)
         self.h_scroll = ttk.Scrollbar(self, orient=tk.HORIZONTAL)
 
-        # Treeview — 使用 show="headings"，行号作为首列数据列
+        # Treeview
         self.tree = ttk.Treeview(
             self,
             yscrollcommand=self.v_scroll.set,
@@ -52,14 +52,18 @@ class TableView(tk.Frame):
         if num_cols == 0:
             return
 
-        # 列：行号 + A, B, C, ...
-        all_cols = ["col_row"] + [f"col_{i}" for i in range(num_cols)]
+        # 列：行号 + 分隔线 + A, B, C, ...
+        all_cols = ["col_row", "col_sep"] + [f"col_{i}" for i in range(num_cols)]
         self.tree["columns"] = all_cols
         self.tree["displaycolumns"] = all_cols
 
-        # 行号列 — 固定宽度，够 3 位数字（最多 999 行）
+        # 行号列
         self.tree.column("col_row", width=55, anchor="center", stretch=False)
         self.tree.heading("col_row", text="行号")
+
+        # 分隔线 — 窄空白列
+        self.tree.column("col_sep", width=6, anchor="center", stretch=False)
+        self.tree.heading("col_sep", text="│")
 
         # 数据列
         for i in range(num_cols):
@@ -71,7 +75,10 @@ class TableView(tk.Frame):
         # 插入行
         for r_idx, row_data in enumerate(matrix):
             row_num = r_idx + 1
-            values = [str(row_num)] + [str(v) if v is not None else "" for v in row_data]
+            # 行号 + ""(分隔线) + 数据
+            values = [str(row_num), ""] + [
+                str(v) if v is not None else "" for v in row_data
+            ]
             self.tree.insert("", tk.END, iid=str(row_num), values=values)
 
     def _on_click(self, event):
@@ -87,12 +94,12 @@ class TableView(tk.Frame):
             return
 
         row = int(row_id)
-        # col_id 是 "#N" 格式，#1=行号, #2=A, #3=B, ...
-        # Excel 列号 = col_id_value - 1（因为第一列是行号）
-        col = int(col_id.lstrip("#")) - 1
+        # col_id 格式 "#N": #1=行号, #2=分隔线, #3=A, #4=B, ...
+        # Excel 列号 = N - 2
+        col = int(col_id.lstrip("#")) - 2
 
         if col <= 0:
-            return  # 点击的是行号列，忽略
+            return  # 点击行号或分隔线，忽略
 
         self._on_cell_click(col, row)
 
