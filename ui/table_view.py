@@ -57,10 +57,8 @@ class TableView(tk.Frame):
         self.tree["columns"] = all_cols
         self.tree["displaycolumns"] = all_cols
 
-        # 行号列
-        max_row = len(matrix)
-        row_header_width = max(50, len(str(max_row)) * 12 + 20)
-        self.tree.column("col_row", width=row_header_width, anchor="center")
+        # 行号列 — 固定宽度，够 3 位数字（最多 999 行）
+        self.tree.column("col_row", width=55, anchor="center", stretch=False)
         self.tree.heading("col_row", text="行号")
 
         # 数据列
