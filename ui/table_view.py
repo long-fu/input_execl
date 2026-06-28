@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import tkinter as tk
+import tkinter.font as tkfont
 from tkinter import ttk
 
 from core.utils import col_letter
@@ -11,7 +12,6 @@ COL_W = 80       # 数据列宽
 SEP_W = 7        # 分隔线宽
 ROW_H = 26       # 行高
 HEADER_H = 26    # 表头高
-FONT = ("", 9)
 
 
 class TableView(tk.Frame):
@@ -22,6 +22,13 @@ class TableView(tk.Frame):
         self._num_cols = 0
         self._num_rows = 0
         self._current_highlight: tuple[int, int] | None = None
+
+        # 使用系统配置的默认字体（继承 app.py 的 _setup_fonts 配置）
+        default_font = tkfont.nametofont("TkDefaultFont")
+        family = default_font.actual("family")
+        size = default_font.actual("size")
+        self._font = (family, max(size, 10))
+        self._font_bold = (family, max(size, 10), "bold")
 
         # Canvas
         self.canvas = tk.Canvas(self, bg="white", highlightthickness=0)
@@ -106,7 +113,7 @@ class TableView(tk.Frame):
                                      fill="#e8e8e8", outline="#c0c0c0",
                                      tags=("header",))
         self.canvas.create_text(ROW_NO_W // 2, HEADER_H // 2,
-                                text="行号", fill="#555", font=("", 9, "bold"),
+                                text="行号", fill="#555", font=self._font_bold,
                                 tags=("header",))
 
         # 分隔线表头
@@ -123,7 +130,7 @@ class TableView(tk.Frame):
                                          tags=("header",))
             self.canvas.create_text(x + COL_W // 2, HEADER_H // 2,
                                     text=letter, fill="#333",
-                                    font=("", 9, "bold"),
+                                    font=self._font_bold,
                                     tags=("header",))
 
         # ── 行号列背景 ──
@@ -133,7 +140,7 @@ class TableView(tk.Frame):
                                          fill="#f5f5f5", outline="#e0e0e0",
                                          tags=("rownum",))
             self.canvas.create_text(ROW_NO_W // 2, y + ROW_H // 2,
-                                    text=str(r), fill="#888", font=FONT,
+                                    text=str(r), fill="#888", font=self._font,
                                     tags=("rownum",))
 
         # 分隔线列
@@ -158,7 +165,7 @@ class TableView(tk.Frame):
                                              fill="white", outline="#e0e0e0",
                                              tags=("cell", tag))
                 self.canvas.create_text(x + COL_W // 2, y + ROW_H // 2,
-                                        text=display, fill="#222", font=FONT,
+                                        text=display, fill="#222", font=self._font,
                                         tags=("cell", tag))
 
     # ── 点击 ──
