@@ -233,6 +233,7 @@ class App:
     def _on_cell_change(self, col: int, row: int):
         """输入栏列号/行号变化时高亮对应单元格"""
         self.table_view.highlight(col, row)
+        self.table_view.scroll_to(col, row)
 
     def _on_cell_click(self, col: int, row: int):
         """表格单元格被点击 → 填充输入栏"""
@@ -241,6 +242,7 @@ class App:
         current_value = self.handler.read_cell(col, row)
         self.input_bar.set_value(current_value)
         self.table_view.highlight(col, row)
+        self.table_view.scroll_to(col, row)
         self.input_bar.focus_value()
 
     def _on_mode_change(self, mode: str):
