@@ -1,4 +1,5 @@
 """录入模式导航逻辑"""
+from __future__ import annotations
 
 MODE_SINGLE = "single"
 MODE_COL_INC = "col_inc"

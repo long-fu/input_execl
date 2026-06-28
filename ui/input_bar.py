@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import tkinter as tk
-from tkinter import ttk
 
 
 class InputBar(tk.Frame):
@@ -36,6 +35,7 @@ class InputBar(tk.Frame):
         self.value_entry.bind("<Return>", lambda e: self._handle_submit())
         self.col_entry.bind("<Tab>", self._on_tab)
         self.row_entry.bind("<Tab>", self._on_tab)
+        self.value_entry.bind("<Tab>", self._on_tab)
 
         # 列号/行号变化时通知 table_view 高亮
         self.col_entry.bind("<KeyRelease>", self._notify_cell_change)
@@ -48,6 +48,8 @@ class InputBar(tk.Frame):
             self.row_entry.focus_set()
         elif current == self.row_entry:
             self.value_entry.focus_set()
+        elif current == self.value_entry:
+            self.col_entry.focus_set()
         return "break"
 
     def _notify_cell_change(self, event=None):

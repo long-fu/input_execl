@@ -1,15 +1,17 @@
 """表格视图组件 — 基于 ttk.Treeview 展示 Excel 内容"""
+from __future__ import annotations
+
 import tkinter as tk
 from tkinter import ttk
+
+from core.utils import col_letter
 
 
 class TableView(tk.Frame):
     def __init__(self, parent, on_cell_click: callable):
         super().__init__(parent)
         self._on_cell_click = on_cell_click
-        self._data: list[list] = []
         self._current_highlight: tuple[int, int] | None = None
-        self._handler = None
 
         # 滚动条
         self.v_scroll = ttk.Scrollbar(self, orient=tk.VERTICAL)
@@ -41,18 +43,10 @@ class TableView(tk.Frame):
 
     def _column_letter(self, n: int) -> str:
         """数字列号 → 字母列号（1→A, 27→AA）"""
-        result = ""
-        while n > 0:
-            n -= 1
-            result = chr(n % 26 + ord("A")) + result
-            n //= 26
-        return result
+        return col_letter(n)
 
     def refresh(self, matrix: list[list], handler):
         """完全重建表格"""
-        self._data = matrix
-        self._handler = handler
-
         # 清除旧数据
         self.tree.delete(*self.tree.get_children())
         cols = self.tree["columns"]

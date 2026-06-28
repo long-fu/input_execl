@@ -1,11 +1,15 @@
 """主窗口"""
+from __future__ import annotations
+
 import tkinter as tk
+from pathlib import Path
 from tkinter import filedialog, messagebox
 from ui.input_bar import InputBar
 from ui.table_view import TableView
 from ui.mode_bar import ModeBar
 from core.excel_handler import ExcelHandler
 from core.navigator import Navigator, MODE_SINGLE, MODE_COL_INC, MODE_ROW_INC, MODE_LABELS
+from core.utils import col_letter
 
 
 class App:
@@ -67,6 +71,18 @@ class App:
         file_menu.add_command(label="退出", command=self.root.quit)
         menubar.add_cascade(label="文件", menu=file_menu)
 
+        # 编辑菜单（占位）
+        edit_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="编辑", menu=edit_menu)
+
+        # 帮助菜单
+        help_menu = tk.Menu(menubar, tearoff=0)
+        help_menu.add_command(label="关于", command=self._show_about)
+        menubar.add_cascade(label="帮助", menu=help_menu)
+
+    def _show_about(self):
+        messagebox.showinfo("关于", "Excel 快速录入工具 v1.0")
+
     # ── 快捷键 ──
 
     def _bind_shortcuts(self):
@@ -81,6 +97,9 @@ class App:
     # ── 文件操作 ──
 
     def _file_new(self):
+        if self.handler.filepath is None:
+            if not messagebox.askyesno("未保存更改", "当前文件尚未保存，确定放弃吗？"):
+                return
         self.handler.new()
         self.navigator.reset()
         self.input_bar.clear_all()
@@ -91,6 +110,9 @@ class App:
         self._update_status()
 
     def _file_open(self):
+        if self.handler.filepath is None:
+            if not messagebox.askyesno("未保存更改", "当前文件尚未保存，确定放弃吗？"):
+                return
         path = filedialog.askopenfilename(
             filetypes=[("Excel 文件", "*.xlsx"), ("所有文件", "*.*")]
         )
@@ -150,7 +172,7 @@ class App:
         self.input_bar.clear_value()
         self.input_bar.focus_value()
 
-        self._update_status(f"已写入 {self.table_view._column_letter(col)}{row} = {value}")
+        self._update_status(f"已写入 {col_letter(col)}{row} = {value}")
 
     def _on_cell_change(self, col: int, row: int):
         """输入栏列号/行号变化时高亮对应单元格"""
@@ -160,6 +182,8 @@ class App:
         """表格单元格被点击 → 填充输入栏"""
         self.input_bar.set_column(col)
         self.input_bar.set_row(row)
+        current_value = self.handler.read_cell(col, row)
+        self.input_bar.set_value(current_value)
         self.table_view.highlight(col, row)
         self.input_bar.focus_value()
 
@@ -179,14 +203,14 @@ class App:
 
     def _update_title(self):
         fp = self.handler.filepath
-        name = fp.split("/")[-1] if fp else "未命名"
+        name = Path(fp).name if fp else "未命名"
         self.root.title(f"Excel 快速录入工具 — {name}")
 
     def _update_status(self, msg: str | None = None):
         fp = self.handler.filepath
-        name = fp.split("/")[-1] if fp else "未命名"
+        name = Path(fp).name if fp else "未命名"
         saved = "已保存" if fp else "未保存"
-        pos = f"{self.table_view._column_letter(self.navigator.col)}{self.navigator.row}"
+        pos = f"{col_letter(self.navigator.col)}{self.navigator.row}"
         mode_label = MODE_LABELS.get(self.navigator.mode, self.navigator.mode)
         self.status_var.set(
             f"  {name} | {saved} | 位置: {pos} | 模式: {mode_label}"
