@@ -37,10 +37,6 @@ class TableView(tk.Frame):
         # 绑定点击
         self.tree.bind("<ButtonRelease-1>", self._on_click)
 
-        # 样式
-        style = ttk.Style()
-        style.configure("Treeview", rowheight=28)
-
     def _column_letter(self, n: int) -> str:
         """数字列号 → 字母列号（1→A, 27→AA）"""
         return col_letter(n)

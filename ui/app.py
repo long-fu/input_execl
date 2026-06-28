@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import tkinter as tk
+import tkinter.font as tkfont
 from pathlib import Path
 from tkinter import filedialog, messagebox
 from ui.input_bar import InputBar
@@ -11,6 +12,32 @@ from core.excel_handler import ExcelHandler
 from core.navigator import Navigator, MODE_SINGLE, MODE_COL_INC, MODE_ROW_INC, MODE_LABELS
 from core.utils import col_letter
 
+# 可用的中文字体优先级列表（Linux）
+_FONT_CANDIDATES = [
+    "Noto Sans CJK SC",
+    "WenQuanYi Micro Hei",
+    "WenQuanYi Zen Hei",
+    "Noto Sans SC",
+    "Source Han Sans SC",
+    "DejaVu Sans",
+    "sans-serif",
+]
+
+_FIXED_FONT_CANDIDATES = [
+    "Noto Sans Mono CJK SC",
+    "DejaVu Sans Mono",
+    "monospace",
+]
+
+
+def _find_font(candidates: list[str], default: str = "TkDefaultFont") -> str:
+    """从候选列表中找第一个系统可用的字体"""
+    available = set(tkfont.families())
+    for name in candidates:
+        if name in available:
+            return name
+    return default
+
 
 class App:
     def __init__(self, root: tk.Tk):
@@ -18,6 +45,9 @@ class App:
         self.root.title("Excel 快速录入工具")
         self.root.geometry("1000x650")
         self.root.minsize(600, 400)
+
+        # ── 字体与 DPI 设置（解决 Linux 下模糊问题）──
+        self._setup_fonts()
 
         self.handler = ExcelHandler()
         self.navigator = Navigator()
@@ -46,7 +76,7 @@ class App:
         self.status_var = tk.StringVar()
         self.status_bar = tk.Label(
             self.root, textvariable=self.status_var,
-            anchor=tk.W, relief=tk.SUNKEN, font=("", 9)
+            anchor=tk.W, relief=tk.SUNKEN
         )
         self.status_bar.pack(fill=tk.X, side=tk.BOTTOM)
         self._update_status()
@@ -55,6 +85,47 @@ class App:
         self._bind_shortcuts()
 
         self._update_title()
+
+    def _setup_fonts(self):
+        """配置清晰字体和 DPI 缩放"""
+        font_name = _find_font(_FONT_CANDIDATES)
+        fixed_name = _find_font(_FIXED_FONT_CANDIDATES, font_name)
+
+        # DPI 缩放
+        try:
+            self.root.tk.call("tk", "scaling", 1.5)
+        except Exception:
+            pass
+
+        # 全局默认字体
+        default_font = tkfont.nametofont("TkDefaultFont")
+        default_font.configure(family=font_name, size=11)
+
+        text_font = tkfont.nametofont("TkTextFont")
+        text_font.configure(family=font_name, size=11)
+
+        fixed_font = tkfont.nametofont("TkFixedFont")
+        fixed_font.configure(family=fixed_name, size=11)
+
+        # ttk 主题 — clam 渲染更清晰
+        try:
+            self.root.tk.call("ttk::style", "theme", "use", "clam")
+        except Exception:
+            pass
+
+        # ttk Treeview 字体
+        try:
+            self.root.tk.call(
+                "ttk::style", "configure", "Treeview",
+                "-font", f"{{{font_name}}} 11",
+                "-rowheight", 30,
+            )
+            self.root.tk.call(
+                "ttk::style", "configure", "Treeview.Heading",
+                "-font", f"{{{font_name}}} 11 bold",
+            )
+        except Exception:
+            pass
 
     # ── 菜单 ──
 
