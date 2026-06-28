@@ -215,11 +215,11 @@ class TableView(tk.Frame):
         for item in items:
             if self.canvas.type(item) == "rectangle":
                 self.canvas.delete(item)
-        self.canvas.create_rectangle(x, y, x + COL_W, y + ROW_H,
-                                     fill=fill, outline=outline,
-                                     tags=("cell", tag))
-        # 新的矩形在文本下面
-        self.canvas.tag_lower(tag)
+        rect_id = self.canvas.create_rectangle(x, y, x + COL_W, y + ROW_H,
+                                               fill=fill, outline=outline,
+                                               tags=("cell", tag))
+        # 只降低新矩形，不动文字
+        self.canvas.tag_lower(rect_id)
 
     def scroll_to(self, col: int, row: int):
         """滚动到指定行"""
