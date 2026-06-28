@@ -6,11 +6,6 @@ from tkinter import ttk
 
 from core.utils import col_letter
 
-CELL_W = 80    # 数据列宽
-CELL_H = 28    # 行高
-ROW_NO_W = 50  # 行号列宽
-HEADER_H = 26  # 表头高
-
 
 class TableView(tk.Frame):
     def __init__(self, parent, on_cell_click: callable):
@@ -19,48 +14,73 @@ class TableView(tk.Frame):
         self._matrix: list[list] = []
         self._current_highlight: tuple[int, int] | None = None
         self._cell_widgets: dict[tuple[int, int], tk.Label] = {}
-        self._header_widgets: list[tk.Label] = []
 
-        # 顶部固定表头
-        self._header_frame = tk.Frame(self, bg="#e8e8e8")
-        self._header_frame.pack(fill=tk.X, side=tk.TOP)
-
-        # Canvas + 滚动
+        # Canvas + 双滚动条
         self.canvas = tk.Canvas(self, bg="white", highlightthickness=0)
-        self.scroll_y = ttk.Scrollbar(self, orient=tk.VERTICAL, command=self.canvas.yview)
-        self.scroll_x = ttk.Scrollbar(self, orient=tk.HORIZONTAL, command=self.canvas.xview)
-        self.canvas.configure(yscrollcommand=self.scroll_y.set, xscrollcommand=self.scroll_x.set)
+        self.scroll_y = ttk.Scrollbar(self, orient=tk.VERTICAL, command=self._on_scroll_y)
+        self.scroll_x = ttk.Scrollbar(self, orient=tk.HORIZONTAL, command=self._on_scroll_x)
 
-        self._grid_frame = tk.Frame(self.canvas, bg="white")
-        self._canvas_win = self.canvas.create_window((0, 0), window=self._grid_frame, anchor="nw")
+        # 内容框架 — 表头 + 数据都在里面
+        self._content = tk.Frame(self.canvas, bg="white")
+        self._header_frame: tk.Frame | None = None
+        self._data_frame: tk.Frame | None = None
+        self._canvas_win = self.canvas.create_window((0, 0), window=self._content, anchor="nw")
 
-        self.canvas.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
-        self.scroll_y.pack(fill=tk.Y, side=tk.RIGHT)
-        self.scroll_x.pack(fill=tk.X, side=tk.BOTTOM)
+        # 布局
+        self.canvas.grid(row=0, column=0, sticky="nsew")
+        self.scroll_y.grid(row=0, column=1, sticky="ns")
+        self.scroll_x.grid(row=1, column=0, sticky="ew")
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
 
-        # 滚动事件
-        self._grid_frame.bind("<Configure>", self._on_frame_configure)
-        self.canvas.bind("<Enter>", self._bind_mousewheel)
-        self.canvas.bind("<Leave>", self._unbind_mousewheel)
+        # Canvas 绑定
+        self._content.bind("<Configure>", self._on_content_resize)
+        self.canvas.bind("<Configure>", self._on_canvas_resize)
+        self._bind_mousewheel()
 
-    def _bind_mousewheel(self, event):
+    def _bind_mousewheel(self):
+        self.canvas.bind("<Enter>", lambda e: self._arm_scroll())
+        self.canvas.bind("<Leave>", lambda e: self._disarm_scroll())
+
+    def _arm_scroll(self):
         self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
         self.canvas.bind_all("<Button-4>", self._on_mousewheel)
         self.canvas.bind_all("<Button-5>", self._on_mousewheel)
 
-    def _unbind_mousewheel(self, event):
+    def _disarm_scroll(self):
         self.canvas.unbind_all("<MouseWheel>")
         self.canvas.unbind_all("<Button-4>")
         self.canvas.unbind_all("<Button-5>")
 
     def _on_mousewheel(self, event):
-        if event.num == 4 or event.delta > 0:
+        if event.num == 4 or (hasattr(event, "delta") and event.delta > 0):
             self.canvas.yview_scroll(-1, "units")
-        elif event.num == 5 or event.delta < 0:
+        elif event.num == 5 or (hasattr(event, "delta") and event.delta < 0):
             self.canvas.yview_scroll(1, "units")
 
-    def _on_frame_configure(self, event):
+    def _on_scroll_y(self, *args):
+        self.canvas.yview(*args)
+
+    def _on_scroll_x(self, *args):
+        """水平滚动 — 同步表头和数据"""
+        self.canvas.xview(*args)
+
+    def _on_content_resize(self, event):
+        """内容尺寸变化 → 更新可滚动区域 + 窗口宽度"""
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        # 确保 canvas window 宽度 ≥ 内容实际宽度，水平滚动才能工作
+        req_w = self._content.winfo_reqwidth()
+        cur_w = self.canvas.winfo_width()
+        if req_w > cur_w:
+            self.canvas.itemconfigure(self._canvas_win, width=req_w)
+        else:
+            self.canvas.itemconfigure(self._canvas_win, width=cur_w)
+
+    def _on_canvas_resize(self, event):
+        """Canvas 大小变化 → 确保窗口宽度不低于视口"""
+        req_w = self._content.winfo_reqwidth()
+        if req_w < event.width:
+            self.canvas.itemconfigure(self._canvas_win, width=event.width)
 
     def _column_letter(self, n: int) -> str:
         return col_letter(n)
@@ -69,36 +89,36 @@ class TableView(tk.Frame):
         """重建表格"""
         self._matrix = matrix
         self._current_highlight = None
-
-        # 清除旧控件
-        for w in self._header_widgets:
-            w.destroy()
-        self._header_widgets.clear()
-        for w in self._cell_widgets.values():
-            w.destroy()
         self._cell_widgets.clear()
-        for child in self._grid_frame.winfo_children():
+
+        # 清除旧内容
+        for child in self._content.winfo_children():
             child.destroy()
+        self._header_frame = None
+        self._data_frame = None
 
         if not matrix:
+            self.canvas.configure(scrollregion=(0, 0, 0, 0))
             return
 
         num_cols = len(matrix[0])
         if num_cols == 0:
+            self.canvas.configure(scrollregion=(0, 0, 0, 0))
             return
 
-        # ── 表头 ──
+        # ── 表头行 ──
+        self._header_frame = tk.Frame(self._content, bg="#e8e8e8")
+        self._header_frame.pack(fill=tk.X, side=tk.TOP)
+
         # 行号表头
         h = tk.Label(self._header_frame, text="行号", width=6,
                      bg="#e8e8e8", fg="#555", font=("", 9, "bold"),
                      relief=tk.GROOVE, borderwidth=1)
         h.pack(side=tk.LEFT)
-        self._header_widgets.append(h)
 
         # 分隔线
         sep = tk.Label(self._header_frame, text="", width=1, bg="#d0d0d0")
         sep.pack(side=tk.LEFT)
-        self._header_widgets.append(sep)
 
         # 列标题
         for i in range(num_cols):
@@ -107,12 +127,14 @@ class TableView(tk.Frame):
                          bg="#e8e8e8", fg="#333", font=("", 9, "bold"),
                          relief=tk.GROOVE, borderwidth=1)
             h.pack(side=tk.LEFT)
-            self._header_widgets.append(h)
 
         # ── 数据行 ──
+        self._data_frame = tk.Frame(self._content, bg="white")
+        self._data_frame.pack(fill=tk.BOTH, side=tk.TOP)
+
         for r_idx, row_data in enumerate(matrix):
             row_num = r_idx + 1
-            row_frame = tk.Frame(self._grid_frame, bg="white")
+            row_frame = tk.Frame(self._data_frame, bg="white")
             row_frame.pack(fill=tk.X)
 
             # 行号
@@ -121,27 +143,23 @@ class TableView(tk.Frame):
                             relief=tk.GROOVE, borderwidth=1,
                             font=("", 9))
             rlbl.pack(side=tk.LEFT)
-            self._cell_widgets[(r_idx, 0)] = rlbl  # col=0 表示行号
+            self._cell_widgets[(r_idx, 0)] = rlbl
 
             # 分隔线
             sep = tk.Label(row_frame, text="", width=1, bg="#e0e0e0", relief=tk.FLAT)
             sep.pack(side=tk.LEFT)
-            self._cell_widgets[(r_idx, -1)] = sep
 
             # 数据单元格
             for c_idx, val in enumerate(row_data):
                 text = str(val) if val is not None else ""
-                # 截断过长文本
                 display = text[:15] + "…" if len(text) > 16 else text
 
                 lbl = tk.Label(row_frame, text=display, width=10,
                                bg="white", fg="#222",
                                relief=tk.GROOVE, borderwidth=1,
-                               font=("", 9),
-                               anchor="center")
+                               font=("", 9), anchor="center")
                 lbl.pack(side=tk.LEFT)
 
-                # 绑定点击
                 excel_col = c_idx + 1
                 excel_row = row_num
                 lbl.bind("<Button-1>",
@@ -149,33 +167,34 @@ class TableView(tk.Frame):
 
                 self._cell_widgets[(r_idx, c_idx + 1)] = lbl
 
+        # 更新滚动区域
+        self._content.update_idletasks()
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        req_w = self._content.winfo_reqwidth()
+        canvas_w = self.canvas.winfo_width()
+        self.canvas.itemconfigure(self._canvas_win, width=max(req_w, canvas_w))
+
     def _on_label_click(self, col: int, row: int):
-        """单元格被点击"""
         self.highlight(col, row)
         self._on_cell_click(col, row)
 
     def highlight(self, col: int, row: int):
-        """高亮单个单元格 — 深色边框 + 浅蓝底色"""
-        # 还原旧高亮
+        """高亮单个单元格"""
         if self._current_highlight:
             old_col, old_row = self._current_highlight
             old_key = (old_row - 1, old_col)
             if old_key in self._cell_widgets:
-                lbl = self._cell_widgets[old_key]
-                lbl.configure(bg="white", relief=tk.GROOVE, borderwidth=1)
+                self._cell_widgets[old_key].configure(
+                    bg="white", relief=tk.GROOVE, borderwidth=1)
 
-        # 设置新高亮
         key = (row - 1, col)
         if key in self._cell_widgets:
-            lbl = self._cell_widgets[key]
-            lbl.configure(bg="#cce5ff", relief=tk.SOLID, borderwidth=2)
+            self._cell_widgets[key].configure(
+                bg="#cce5ff", relief=tk.SOLID, borderwidth=2)
             self._current_highlight = (col, row)
 
     def scroll_to(self, col: int, row: int):
         """滚动到指定行"""
-        # 估算 y 位置
-        y = (row - 1) * (CELL_H + 2)  # 2px pack spacing
-        total_h = len(self._matrix) * (CELL_H + 2)
-        if total_h > 0:
-            fraction = max(0, min(1, y / total_h))
-            self.canvas.yview_moveto(fraction)
+        y_est = (row + 0.5) * 30
+        total = max(1, len(self._matrix) * 30 + 30)
+        self.canvas.yview_moveto(min(1, y_est / total))
