@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import tkinter as tk
-import tkinter.font as tkfont
 from tkinter import ttk
 
 from core.utils import col_letter
@@ -15,7 +14,8 @@ HEADER_H = 26    # 表头高
 
 
 class TableView(tk.Frame):
-    def __init__(self, parent, on_cell_click: callable):
+    def __init__(self, parent, on_cell_click: callable,
+                 font_family: str = "", font_size: int = 11):
         super().__init__(parent)
         self._on_cell_click = on_cell_click
         self._matrix: list[list] = []
@@ -23,12 +23,9 @@ class TableView(tk.Frame):
         self._num_rows = 0
         self._current_highlight: tuple[int, int] | None = None
 
-        # 使用系统配置的默认字体（继承 app.py 的 _setup_fonts 配置）
-        default_font = tkfont.nametofont("TkDefaultFont")
-        family = default_font.actual("family")
-        size = default_font.actual("size")
-        self._font = (family, max(size, 10))
-        self._font_bold = (family, max(size, 10), "bold")
+        family = font_family if font_family else "TkDefaultFont"
+        self._font = (family, font_size)
+        self._font_bold = (family, font_size, "bold")
 
         # Canvas
         self.canvas = tk.Canvas(self, bg="white", highlightthickness=0)

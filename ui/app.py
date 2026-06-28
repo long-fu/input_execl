@@ -64,7 +64,10 @@ class App:
         self.input_bar.pack(fill=tk.X, padx=10, pady=(10, 2))
 
         # 表格视图
-        self.table_view = TableView(self.root, on_cell_click=self._on_cell_click)
+        self.table_view = TableView(
+            self.root, on_cell_click=self._on_cell_click,
+            font_family=self._font_name, font_size=self._font_size,
+        )
         self.table_view.pack(fill=tk.BOTH, expand=True, padx=10, pady=2)
         self._refresh_table()
 
@@ -87,43 +90,25 @@ class App:
         self._update_title()
 
     def _setup_fonts(self):
-        """配置清晰字体和 DPI 缩放"""
+        """配置清晰字体"""
         font_name = _find_font(_FONT_CANDIDATES)
         fixed_name = _find_font(_FIXED_FONT_CANDIDATES, font_name)
-
-        # DPI 缩放
-        try:
-            self.root.tk.call("tk", "scaling", 1.5)
-        except Exception:
-            pass
+        self._font_name = font_name
+        self._font_size = 11
 
         # 全局默认字体
         default_font = tkfont.nametofont("TkDefaultFont")
-        default_font.configure(family=font_name, size=11)
+        default_font.configure(family=font_name, size=self._font_size)
 
         text_font = tkfont.nametofont("TkTextFont")
-        text_font.configure(family=font_name, size=11)
+        text_font.configure(family=font_name, size=self._font_size)
 
         fixed_font = tkfont.nametofont("TkFixedFont")
-        fixed_font.configure(family=fixed_name, size=11)
+        fixed_font.configure(family=fixed_name, size=self._font_size)
 
         # ttk 主题 — clam 渲染更清晰
         try:
             self.root.tk.call("ttk::style", "theme", "use", "clam")
-        except Exception:
-            pass
-
-        # ttk Treeview 字体
-        try:
-            self.root.tk.call(
-                "ttk::style", "configure", "Treeview",
-                "-font", f"{{{font_name}}} 11",
-                "-rowheight", 30,
-            )
-            self.root.tk.call(
-                "ttk::style", "configure", "Treeview.Heading",
-                "-font", f"{{{font_name}}} 11 bold",
-            )
         except Exception:
             pass
 
