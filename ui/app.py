@@ -96,15 +96,15 @@ class App:
         self._font_name = font_name
         self._font_size = 11
 
-        # 全局默认字体
+        # 全局默认字体（显式 weight="normal" 避免粗细不均）
         default_font = tkfont.nametofont("TkDefaultFont")
-        default_font.configure(family=font_name, size=self._font_size)
+        default_font.configure(family=font_name, size=self._font_size, weight="normal")
 
         text_font = tkfont.nametofont("TkTextFont")
-        text_font.configure(family=font_name, size=self._font_size)
+        text_font.configure(family=font_name, size=self._font_size, weight="normal")
 
         fixed_font = tkfont.nametofont("TkFixedFont")
-        fixed_font.configure(family=fixed_name, size=self._font_size)
+        fixed_font.configure(family=fixed_name, size=self._font_size, weight="normal")
 
         # ttk 主题 — clam 渲染更清晰
         try:

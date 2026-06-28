@@ -24,7 +24,7 @@ class TableView(tk.Frame):
         self._current_highlight: tuple[int, int] | None = None
 
         family = font_family if font_family else "TkDefaultFont"
-        self._font = (family, font_size)
+        self._font = (family, font_size, "normal")
         self._font_bold = (family, font_size, "bold")
 
         # Canvas
