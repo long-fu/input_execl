@@ -60,6 +60,7 @@ class App:
             self.root,
             on_submit=self._on_submit,
             on_cell_change=self._on_cell_change,
+            on_lock_toggle=self._on_lock_toggle,
         )
         self.input_bar.pack(fill=tk.X, padx=10, pady=(10, 2))
 
@@ -86,10 +87,6 @@ class App:
 
         # 快捷键
         self._bind_shortcuts()
-
-        # 默认固定行模式：锁定行号
-        self.input_bar.lock_row()
-        self.input_bar.set_row(self.navigator.fixed_row)
 
         self._update_title()
 
@@ -273,6 +270,13 @@ class App:
         else:
             self.input_bar.unlock_row()
         self._update_status()
+
+    def _on_lock_toggle(self, locked: bool):
+        """复选框切换固定行模式"""
+        if locked:
+            self._set_mode(MODE_FIXED_ROW)
+        else:
+            self._set_mode(MODE_SINGLE)
 
     # ── 辅助方法 ──
 
