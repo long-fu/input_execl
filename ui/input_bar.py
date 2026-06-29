@@ -51,6 +51,10 @@ class InputBar(tk.Frame):
         self.col_entry.bind("<KeyRelease>", self._notify_cell_change)
         self.row_entry.bind("<KeyRelease>", self._notify_cell_change)
 
+        # 切到列号/行号时清空数值
+        self.col_entry.bind("<FocusIn>", lambda e: self.clear_value())
+        self.row_entry.bind("<FocusIn>", lambda e: self.clear_value())
+
     def _on_col_return(self, event=None):
         """列号回车 → 行号或数值，锁定行时跳过行号"""
         if self.row_entry.cget("state") == "readonly":
