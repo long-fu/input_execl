@@ -149,10 +149,6 @@ class App:
         self.root.bind("<Control-o>", lambda e: self._file_open())
         self.root.bind("<Control-s>", lambda e: self._file_save())
         self.root.bind("<Control-n>", lambda e: self._file_new())
-        self.root.bind("<Control-Key-1>", lambda e: self._set_mode(MODE_SINGLE))
-        self.root.bind("<Control-Key-2>", lambda e: self._set_mode(MODE_COL_INC))
-        self.root.bind("<Control-Key-3>", lambda e: self._set_mode(MODE_ROW_INC))
-        self.root.bind("<Control-Key-4>", lambda e: self._set_mode(MODE_FIXED_ROW))
         self.root.bind("<Escape>", lambda e: self.input_bar.clear_all())
 
     # ── 文件操作 ──
