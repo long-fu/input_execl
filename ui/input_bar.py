@@ -103,9 +103,20 @@ class InputBar(tk.Frame):
             self.row_entry.config(bg="#ffe0e0")
             return
 
+        # 校验数值：必须为数字
+        if not value.strip():
+            self.value_entry.config(bg="#ffe0e0")
+            return
+        try:
+            float(value)
+        except ValueError:
+            self.value_entry.config(bg="#ffe0e0")
+            return
+
         # 恢复正常背景
         self.col_entry.config(bg="white")
         self.row_entry.config(bg="white")
+        self.value_entry.config(bg="white")
 
         self._on_submit(col, row, value)
 

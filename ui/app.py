@@ -214,7 +214,14 @@ class App:
     # ── 录入回调 ──
 
     def _on_submit(self, col: int, row: int, value: str):
-        self.handler.write_cell(col, row, value)
+        new_val = float(value)
+        existing = self.handler.read_cell(col, row)
+        if existing != "":
+            try:
+                new_val += float(existing)
+            except ValueError:
+                pass  # 现有值非数字则覆盖
+        self.handler.write_cell(col, row, new_val)
         self.navigator.set_position(col, row)
         self._refresh_table()
 
@@ -229,7 +236,7 @@ class App:
         self.input_bar.clear_value()
         self.input_bar.focus_value()
 
-        self._update_status(f"已写入 {col_letter(col)}{row} = {value}")
+        self._update_status(f"已写入 {col_letter(col)}{row} = {new_val}")
 
     def _on_cell_change(self, col: int, row: int):
         """输入栏列号/行号变化时高亮对应单元格"""
