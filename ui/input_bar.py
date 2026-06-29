@@ -172,6 +172,9 @@ class InputBar(tk.Frame):
     def focus_value(self):
         self.value_entry.focus_set()
 
+    def focus_column(self):
+        self.col_entry.focus_set()
+
     def clear_value(self):
         self.value_entry.delete(0, tk.END)
 

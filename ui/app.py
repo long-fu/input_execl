@@ -231,7 +231,7 @@ class App:
         self.input_bar.set_column(next_col)
         self.input_bar.set_row(next_row)
         self.input_bar.clear_value()
-        self.input_bar.focus_value()
+        self.input_bar.focus_column()
 
         self._update_status(f"已写入 {col_letter(col)}{row} = {new_val}")
 
