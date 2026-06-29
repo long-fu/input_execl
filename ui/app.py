@@ -240,6 +240,7 @@ class App:
 
     def _on_cell_change(self, col: int, row: int):
         """输入栏列号/行号变化时高亮对应单元格"""
+        self.navigator.set_position(col, row)
         self.table_view.highlight(col, row)
         self.table_view.scroll_to(col, row)
 
@@ -247,14 +248,14 @@ class App:
         """表格单元格被点击 → 填充输入栏"""
         self.input_bar.set_column(col)
         if self.navigator.mode == MODE_FIXED_ROW:
-            # 固定行模式：行号锁定，只更新列号，值从固定行读取
-            target_row = self.navigator.fixed_row
-            self.navigator.set_position(col, target_row)
-            self.input_bar.set_row(target_row)
-            current_value = self.handler.read_cell(col, target_row)
+            # 固定行模式：点击单元格更新固定行目标
+            self.navigator.fixed_row = row
+            self.navigator.set_position(col, row)
+            self.input_bar.set_row(row)
+            current_value = self.handler.read_cell(col, row)
             self.input_bar.set_value(current_value)
-            self.table_view.highlight(col, target_row)
-            self.table_view.scroll_to(col, target_row)
+            self.table_view.highlight(col, row)
+            self.table_view.scroll_to(col, row)
         else:
             self.navigator.set_position(col, row)
             self.input_bar.set_row(row)
