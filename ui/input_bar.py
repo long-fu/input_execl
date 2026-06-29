@@ -113,9 +113,10 @@ class InputBar(tk.Frame):
             self.value_entry.config(bg="#ffe0e0")
             return
 
-        # 恢复正常背景
+        # 恢复正常背景（锁定行不恢复）
         self.col_entry.config(bg="white")
-        self.row_entry.config(bg="white")
+        if self.row_entry.cget("state") != "readonly":
+            self.row_entry.config(bg="white")
         self.value_entry.config(bg="white")
 
         self._on_submit(col, row, value)
@@ -130,13 +131,11 @@ class InputBar(tk.Frame):
 
     def lock_row(self):
         """锁定行号输入框（固定行模式）"""
-        self.row_entry.config(state="readonly")
-        self.row_entry.config(readonlybackground="#e8e8e8")
+        self.row_entry.config(state="readonly", bg="#d9d9d9", fg="#666666")
 
     def unlock_row(self):
         """解锁行号输入框"""
-        self.row_entry.config(state="normal")
-        self.row_entry.config(bg="white")
+        self.row_entry.config(state="normal", bg="white", fg="black")
 
     def set_value(self, val):
         self.value_entry.delete(0, tk.END)
