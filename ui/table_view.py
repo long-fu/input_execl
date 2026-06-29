@@ -215,7 +215,6 @@ class TableView(tk.Frame):
         if row < 1 or row > self._num_rows:
             return
 
-        self.highlight(col, row)
         self._on_cell_click(col, row)
 
     # ── 高亮 ──
