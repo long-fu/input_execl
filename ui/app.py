@@ -71,9 +71,9 @@ class App:
         self.table_view.pack(fill=tk.BOTH, expand=True, padx=10, pady=2)
         self._refresh_table()
 
-        # 模式栏
+        # 模式栏（已隐藏，默认固定行模式）
         self.mode_bar = ModeBar(self.root, on_mode_change=self._on_mode_change)
-        self.mode_bar.pack(fill=tk.X, padx=10, pady=2)
+        # self.mode_bar.pack(fill=tk.X, padx=10, pady=2)
 
         # 状态栏
         self.status_var = tk.StringVar()
@@ -86,6 +86,10 @@ class App:
 
         # 快捷键
         self._bind_shortcuts()
+
+        # 默认固定行模式：锁定行号
+        self.input_bar.lock_row()
+        self.input_bar.set_row(self.navigator.fixed_row)
 
         self._update_title()
 

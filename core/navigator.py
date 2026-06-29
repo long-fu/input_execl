@@ -20,10 +20,10 @@ class Navigator:
     """管理录入模式和光标位置"""
 
     def __init__(self):
-        self.mode = MODE_SINGLE
+        self.mode = MODE_FIXED_ROW
         self.col = 1
         self.row = 1
-        self.fixed_row = None
+        self.fixed_row = 1
 
     def set_mode(self, mode: str):
         if mode not in MODES:
