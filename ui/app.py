@@ -9,7 +9,7 @@ from ui.input_bar import InputBar
 from ui.table_view import TableView
 from ui.mode_bar import ModeBar
 from core.excel_handler import ExcelHandler
-from core.navigator import Navigator, MODE_SINGLE, MODE_COL_INC, MODE_ROW_INC, MODE_LABELS
+from core.navigator import Navigator, MODE_SINGLE, MODE_COL_INC, MODE_ROW_INC, MODE_FIXED_ROW, MODE_LABELS
 from core.utils import col_letter
 
 # 可用的中文字体优先级列表（Linux）
@@ -148,6 +148,7 @@ class App:
         self.root.bind("<Control-Key-1>", lambda e: self._set_mode(MODE_SINGLE))
         self.root.bind("<Control-Key-2>", lambda e: self._set_mode(MODE_COL_INC))
         self.root.bind("<Control-Key-3>", lambda e: self._set_mode(MODE_ROW_INC))
+        self.root.bind("<Control-Key-4>", lambda e: self._set_mode(MODE_FIXED_ROW))
         self.root.bind("<Escape>", lambda e: self.input_bar.clear_all())
 
     # ── 文件操作 ──
@@ -238,15 +239,29 @@ class App:
     def _on_cell_click(self, col: int, row: int):
         """表格单元格被点击 → 填充输入栏"""
         self.input_bar.set_column(col)
-        self.input_bar.set_row(row)
-        current_value = self.handler.read_cell(col, row)
-        self.input_bar.set_value(current_value)
-        self.table_view.highlight(col, row)
-        self.table_view.scroll_to(col, row)
+        if self.navigator.mode == MODE_FIXED_ROW:
+            # 固定行模式：行号锁定，只更新列号，值从固定行读取
+            target_row = self.navigator.fixed_row
+            self.input_bar.set_row(target_row)
+            current_value = self.handler.read_cell(col, target_row)
+            self.input_bar.set_value(current_value)
+            self.table_view.highlight(col, target_row)
+            self.table_view.scroll_to(col, target_row)
+        else:
+            self.input_bar.set_row(row)
+            current_value = self.handler.read_cell(col, row)
+            self.input_bar.set_value(current_value)
+            self.table_view.highlight(col, row)
+            self.table_view.scroll_to(col, row)
         self.input_bar.focus_value()
 
     def _on_mode_change(self, mode: str):
         self.navigator.set_mode(mode)
+        if mode == MODE_FIXED_ROW:
+            self.input_bar.lock_row()
+            self.input_bar.set_row(self.navigator.fixed_row)
+        else:
+            self.input_bar.unlock_row()
         self._update_status()
 
     # ── 辅助方法 ──
@@ -257,6 +272,11 @@ class App:
     def _set_mode(self, mode: str):
         self.navigator.set_mode(mode)
         self.mode_bar.set_mode(mode)
+        if mode == MODE_FIXED_ROW:
+            self.input_bar.lock_row()
+            self.input_bar.set_row(self.navigator.fixed_row)
+        else:
+            self.input_bar.unlock_row()
         self._update_status()
 
     def _update_title(self):

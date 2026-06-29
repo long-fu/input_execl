@@ -117,6 +117,16 @@ class InputBar(tk.Frame):
         self.row_entry.delete(0, tk.END)
         self.row_entry.insert(0, str(row))
 
+    def lock_row(self):
+        """锁定行号输入框（固定行模式）"""
+        self.row_entry.config(state="readonly")
+        self.row_entry.config(readonlybackground="#e8e8e8")
+
+    def unlock_row(self):
+        """解锁行号输入框"""
+        self.row_entry.config(state="normal")
+        self.row_entry.config(bg="white")
+
     def set_value(self, val):
         self.value_entry.delete(0, tk.END)
         self.value_entry.insert(0, str(val) if val is not None else "")
