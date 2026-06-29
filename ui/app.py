@@ -249,12 +249,14 @@ class App:
         if self.navigator.mode == MODE_FIXED_ROW:
             # 固定行模式：行号锁定，只更新列号，值从固定行读取
             target_row = self.navigator.fixed_row
+            self.navigator.set_position(col, target_row)
             self.input_bar.set_row(target_row)
             current_value = self.handler.read_cell(col, target_row)
             self.input_bar.set_value(current_value)
             self.table_view.highlight(col, target_row)
             self.table_view.scroll_to(col, target_row)
         else:
+            self.navigator.set_position(col, row)
             self.input_bar.set_row(row)
             current_value = self.handler.read_cell(col, row)
             self.input_bar.set_value(current_value)
