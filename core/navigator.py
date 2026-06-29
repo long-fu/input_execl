@@ -49,7 +49,6 @@ class Navigator:
         elif self.mode == MODE_ROW_INC:
             self.col += 1
         elif self.mode == MODE_FIXED_ROW:
-            self.col += 1
             self.row = self.fixed_row
         # MODE_SINGLE 不自动推进
         return self.col, self.row
