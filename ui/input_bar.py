@@ -183,6 +183,9 @@ class InputBar(tk.Frame):
     def clear_value(self):
         self.value_entry.delete(0, tk.END)
 
+    def clear_column(self):
+        self.col_entry.delete(0, tk.END)
+
     def clear_all(self):
         self.col_entry.delete(0, tk.END)
         self.row_entry.delete(0, tk.END)

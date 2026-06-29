@@ -228,7 +228,7 @@ class App:
 
         # 根据模式推进位置
         next_col, next_row = self.navigator.advance()
-        self.input_bar.set_column(next_col)
+        self.input_bar.clear_column()
         self.input_bar.set_row(next_row)
         self.input_bar.clear_value()
         self.input_bar.focus_column()
