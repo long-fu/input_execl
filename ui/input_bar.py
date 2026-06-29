@@ -40,7 +40,7 @@ class InputBar(tk.Frame):
         self.lock_cb.pack(side=tk.LEFT, padx=(10, 0))
 
         # 绑定键盘事件
-        self.col_entry.bind("<Return>", lambda e: self.row_entry.focus_set())
+        self.col_entry.bind("<Return>", self._on_col_return)
         self.row_entry.bind("<Return>", lambda e: self.value_entry.focus_set())
         self.value_entry.bind("<Return>", lambda e: self._handle_submit())
         self.col_entry.bind("<Tab>", self._on_tab)
@@ -51,11 +51,22 @@ class InputBar(tk.Frame):
         self.col_entry.bind("<KeyRelease>", self._notify_cell_change)
         self.row_entry.bind("<KeyRelease>", self._notify_cell_change)
 
-    def _on_tab(self, event):
-        """Tab 切换到下一个输入框"""
-        current = event.widget
-        if current == self.col_entry:
+    def _on_col_return(self, event=None):
+        """列号回车 → 行号或数值，锁定行时跳过行号"""
+        if self.row_entry.cget("state") == "readonly":
+            self.value_entry.focus_set()
+        else:
             self.row_entry.focus_set()
+
+    def _on_tab(self, event):
+        """Tab 切换到下一个输入框，锁定行时跳过行号"""
+        current = event.widget
+        row_locked = self.row_entry.cget("state") == "readonly"
+        if current == self.col_entry:
+            if row_locked:
+                self.value_entry.focus_set()
+            else:
+                self.row_entry.focus_set()
         elif current == self.row_entry:
             self.value_entry.focus_set()
         elif current == self.value_entry:
