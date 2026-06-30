@@ -88,6 +88,7 @@ class App:
         # 快捷键
         self._bind_shortcuts()
 
+        self._update_row_sum()
         self._update_title()
 
     def _setup_fonts(self):
@@ -227,12 +228,13 @@ class App:
         self.table_view.scroll_to(col, row)
 
         # 根据模式推进位置
-        next_col, next_row = self.navigator.advance()
+        _, next_row = self.navigator.advance()
         self.input_bar.clear_column()
         self.input_bar.set_row(next_row)
         self.input_bar.clear_value()
         self.input_bar.focus_column()
 
+        self._update_row_sum()
         self._update_status(f"已写入 {col_letter(col)}{row} = {new_val}")
 
     def _on_cell_change(self, col: int, row: int):
@@ -253,6 +255,7 @@ class App:
             self.input_bar.set_value(current_value)
             self.table_view.highlight(col, row)
             self.table_view.scroll_to(col, row)
+            self._update_row_sum()
         else:
             self.navigator.set_position(col, row)
             self.input_bar.set_row(row)
@@ -277,6 +280,24 @@ class App:
             self._set_mode(MODE_FIXED_ROW)
         else:
             self._set_mode(MODE_SINGLE)
+        self._update_row_sum()
+
+    def _update_row_sum(self):
+        """更新锁定行的值合计"""
+        if self.navigator.mode == MODE_FIXED_ROW and self.navigator.fixed_row:
+            matrix = self.handler.get_matrix()
+            r = self.navigator.fixed_row - 1  # matrix 索引从 0 开始
+            if 0 <= r < len(matrix):
+                total = 0.0
+                for val in matrix[r]:
+                    if val is not None and str(val).strip() != "":
+                        try:
+                            total += float(val)
+                        except (ValueError, TypeError):
+                            pass
+                self.input_bar.set_row_sum(total)
+                return
+        self.input_bar.set_row_sum(0)
 
     # ── 辅助方法 ──
 

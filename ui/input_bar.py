@@ -20,7 +20,11 @@ class InputBar(tk.Frame):
         # 行号
         tk.Label(self, text="行号:").pack(side=tk.LEFT, padx=(0, 2))
         self.row_entry = tk.Entry(self, width=8)
-        self.row_entry.pack(side=tk.LEFT, padx=(0, 10))
+        self.row_entry.pack(side=tk.LEFT, padx=(0, 5))
+
+        # 行合计
+        self._sum_label = tk.Label(self, text="合计: 0", fg="#888888")
+        self._sum_label.pack(side=tk.LEFT, padx=(0, 10))
 
         # 数值
         tk.Label(self, text="数值:").pack(side=tk.LEFT, padx=(0, 2))
@@ -185,6 +189,13 @@ class InputBar(tk.Frame):
 
     def clear_column(self):
         self.col_entry.delete(0, tk.END)
+
+    def set_row_sum(self, total: float):
+        """更新行合计显示"""
+        if total == 0:
+            self._sum_label.config(text="合计: 0", fg="#888888")
+        else:
+            self._sum_label.config(text=f"合计: {total}", fg="#0066cc")
 
     def clear_all(self):
         self.col_entry.delete(0, tk.END)
