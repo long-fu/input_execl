@@ -2,7 +2,7 @@ name: Build Windows EXE
 
 on:
   push:
-    branches: [master, feat/*]
+    branches: [feat/fixed-row-mode]
   workflow_dispatch:
 
 jobs:
