@@ -148,7 +148,8 @@ class InputBar(tk.Frame):
             self.row_entry.config(bg="white")
         self.value_entry.config(bg="white")
 
-        self._on_submit(col, row, value)
+        if self._on_submit:
+            self._on_submit(col, row, value)
 
     def set_column(self, col: int):
         self.col_entry.delete(0, tk.END)
@@ -192,7 +193,7 @@ class InputBar(tk.Frame):
 
     def set_row_sum(self, total: float):
         """更新行合计显示"""
-        if total == 0:
+        if abs(total) < 1e-9:
             self._sum_label.config(text="合计: 0", fg="#888888")
         else:
             self._sum_label.config(text=f"合计: {total}", fg="#0066cc")

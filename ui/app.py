@@ -212,13 +212,18 @@ class App:
     # ── 录入回调 ──
 
     def _on_submit(self, col: int, row: int, value: str):
-        new_val = float(value)
+        try:
+            new_val = float(value)
+        except (ValueError, TypeError):
+            return  # 非数字不应到达（_handle_submit 已校验）
+
+        overwritten = False
         existing = self.handler.read_cell(col, row)
         if existing != "":
             try:
                 new_val += float(existing)
-            except ValueError:
-                pass  # 现有值非数字则覆盖
+            except (ValueError, TypeError):
+                overwritten = True  # 现有值非数字，被覆盖
         self.handler.write_cell(col, row, new_val)
         self.navigator.set_position(col, row)
         self._refresh_table()
@@ -235,7 +240,10 @@ class App:
         self.input_bar.focus_column()
 
         self._update_row_sum()
-        self._update_status(f"已写入 {col_letter(col)}{row} = {new_val}")
+        msg = f"已写入 {col_letter(col)}{row} = {new_val}"
+        if overwritten:
+            msg += " (覆盖非数字原值)"
+        self._update_status(msg)
 
     def _on_cell_change(self, col: int, row: int):
         """输入栏列号/行号变化时高亮对应单元格"""
@@ -272,6 +280,7 @@ class App:
             self.input_bar.set_row(self.navigator.fixed_row)
         else:
             self.input_bar.unlock_row()
+        self._update_row_sum()
         self._update_status()
 
     def _on_lock_toggle(self, locked: bool):
