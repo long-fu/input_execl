@@ -61,6 +61,7 @@ class App:
             on_submit=self._on_submit,
             on_cell_change=self._on_cell_change,
             on_lock_toggle=self._on_lock_toggle,
+            on_clear_row=self._on_clear_row,
         )
         self.input_bar.pack(fill=tk.X, padx=10, pady=(10, 2))
 
@@ -290,6 +291,18 @@ class App:
         else:
             self._set_mode(MODE_SINGLE)
         self._update_row_sum()
+
+    def _on_clear_row(self):
+        """清空锁定行所有数据"""
+        if self.navigator.mode != MODE_FIXED_ROW or not self.navigator.fixed_row:
+            return
+        r = self.navigator.fixed_row
+        mc = self.handler.max_col
+        for c in range(1, mc + 1):
+            self.handler.write_cell(c, r, "")
+        self._refresh_table()
+        self._update_row_sum()
+        self._update_status(f"已清空第 {r} 行")
 
     def _update_row_sum(self):
         """更新锁定行的值合计"""

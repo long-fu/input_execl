@@ -6,11 +6,13 @@ import tkinter as tk
 
 class InputBar(tk.Frame):
     def __init__(self, parent, on_submit: callable, on_cell_change: callable | None = None,
-                 on_lock_toggle: callable | None = None):
+                 on_lock_toggle: callable | None = None,
+                 on_clear_row: callable | None = None):
         super().__init__(parent)
         self._on_submit = on_submit
         self._on_cell_change = on_cell_change
         self._on_lock_toggle = on_lock_toggle
+        self._on_clear_row = on_clear_row
 
         # 列号
         tk.Label(self, text="列号:").pack(side=tk.LEFT, padx=(0, 2))
@@ -31,8 +33,9 @@ class InputBar(tk.Frame):
         self.value_entry = tk.Entry(self, width=24)
         self.value_entry.pack(side=tk.LEFT, padx=(0, 10))
 
-        # 录入按钮
-        self.submit_btn = tk.Button(self, text="录入", command=self._handle_submit, width=8)
+        # 清空行按钮（锁定后可用）
+        self.submit_btn = tk.Button(self, text="清空行", command=self._handle_clear_row,
+                                     width=8, state=tk.DISABLED)
         self.submit_btn.pack(side=tk.LEFT)
 
         # 锁定行号复选框
@@ -164,15 +167,22 @@ class InputBar(tk.Frame):
         if self._on_lock_toggle:
             self._on_lock_toggle(self._lock_var.get())
 
+    def _handle_clear_row(self):
+        """清空锁定行数据"""
+        if self._on_clear_row:
+            self._on_clear_row()
+
     def lock_row(self):
         """锁定行号输入框（固定行模式）"""
         self._lock_var.set(True)
         self.row_entry.config(state="readonly", bg="#d9d9d9", fg="#666666")
+        self.submit_btn.config(state=tk.NORMAL)
 
     def unlock_row(self):
         """解锁行号输入框"""
         self._lock_var.set(False)
         self.row_entry.config(state="normal", bg="white", fg="black")
+        self.submit_btn.config(state=tk.DISABLED)
 
     def set_value(self, val):
         self.value_entry.delete(0, tk.END)
