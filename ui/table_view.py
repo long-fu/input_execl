@@ -118,7 +118,7 @@ class TableView(tk.Frame):
 
     # ── 绘制 ──
 
-    def refresh(self, matrix: list[list], handler):
+    def refresh(self, matrix: list[list], handler, alert_cols: set | None = None):
         self._matrix = matrix
         self._current_highlight = None
         self.canvas.delete("all")
@@ -152,11 +152,15 @@ class TableView(tk.Frame):
         # 列表头 — pin_top only
         for ci in range(1, self._num_cols + 1):
             x = self._col_x(ci)
+            is_alert = alert_cols and ci in alert_cols
+            header_fill = "#ffe0e0" if is_alert else "#e8e8e8"
+            header_outline = "#e0a0a0" if is_alert else "#c0c0c0"
+            text_fill = "#cc0000" if is_alert else "#333"
             self.canvas.create_rectangle(x, 0, x + COL_W, HEADER_H,
-                                         fill="#e8e8e8", outline="#c0c0c0",
+                                         fill=header_fill, outline=header_outline,
                                          tags=("pin_top",))
             self.canvas.create_text(x + COL_W // 2, HEADER_H // 2,
-                                    text=col_letter(ci), fill="#333",
+                                    text=col_letter(ci), fill=text_fill,
                                     font=self._font_bold, tags=("pin_top",))
 
         # ── 行号列 — pin_left ──
@@ -186,12 +190,17 @@ class TableView(tk.Frame):
                 text = str(val) if val is not None else ""
                 display = text[:16] + "…" if len(text) > 17 else text
 
+                is_alert = alert_cols and c in alert_cols
+                cell_fill = "#ffe0e0" if is_alert else "white"
+                cell_outline = "#e0a0a0" if is_alert else "#e0e0e0"
+                cell_text_fill = "#cc0000" if is_alert else "#222"
+
                 tag = f"cell_{r}_{c}"
                 self.canvas.create_rectangle(x, y, x + COL_W, y + ROW_H,
-                                             fill="white", outline="#e0e0e0",
+                                             fill=cell_fill, outline=cell_outline,
                                              tags=("cell", tag))
                 self.canvas.create_text(x + COL_W // 2, y + ROW_H // 2,
-                                        text=display, fill="#222", font=self._font,
+                                        text=display, fill=cell_text_fill, font=self._font,
                                         tags=("cell", tag))
 
         self._pin()
