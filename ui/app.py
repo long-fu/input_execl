@@ -370,10 +370,32 @@ class App:
                 return
         self.input_bar.set_row_sum(0)
 
+    def _compute_alert_cols(self) -> set[int]:
+        """计算需要标红的列集合（仅在固定行模式下生效）"""
+        if self.navigator.mode != MODE_FIXED_ROW or not self.navigator.fixed_row:
+            return set()
+        threshold = self.input_bar.get_alert_threshold()
+        if threshold is None:
+            return set()
+        matrix = self.handler.get_matrix()
+        r = self.navigator.fixed_row - 1
+        if r < 0 or r >= len(matrix):
+            return set()
+        alert_cols = set()
+        for c_idx, val in enumerate(matrix[r]):
+            if val is not None and str(val).strip() != "":
+                try:
+                    if int(val) > threshold:
+                        alert_cols.add(c_idx + 1)
+                except (ValueError, TypeError):
+                    pass
+        return alert_cols
+
     # ── 辅助方法 ──
 
     def _refresh_table(self):
-        self.table_view.refresh(self.handler.get_matrix(), self.handler)
+        alert_cols = self._compute_alert_cols()
+        self.table_view.refresh(self.handler.get_matrix(), self.handler, alert_cols)
 
     def _set_mode(self, mode: str):
         self.navigator.set_mode(mode)
