@@ -51,6 +51,7 @@ class App:
 
         self.handler = ExcelHandler()
         self.navigator = Navigator()
+        self._undo_stack: list[tuple[int, int, object]] = []  # (col, row, old_value)
 
         # 菜单
         self._build_menu()
@@ -62,6 +63,7 @@ class App:
             on_cell_change=self._on_cell_change,
             on_lock_toggle=self._on_lock_toggle,
             on_clear_row=self._on_clear_row,
+            on_undo=self._undo,
         )
         self.input_bar.pack(fill=tk.X, padx=10, pady=(10, 2))
 
@@ -167,6 +169,7 @@ class App:
         self.root.bind("<Control-s>", lambda e: self._file_save())
         self.root.bind("<Control-n>", lambda e: self._file_new())
         self.root.bind("<Escape>", lambda e: self.input_bar.clear_all())
+        self.root.bind("<Control-z>", lambda e: self._undo())
 
     # ── 文件操作 ──
 
@@ -238,6 +241,8 @@ class App:
 
         overwritten = False
         existing = self.handler.read_cell(col, row)
+        # 保存旧值到撤销栈
+        self._undo_stack.append((col, row, existing))
         if existing != "":
             try:
                 new_val += int(existing)
@@ -322,6 +327,24 @@ class App:
         self._refresh_table()
         self._update_row_sum()
         self._update_status(f"已清空第 {r} 行")
+
+    def _undo(self):
+        """撤销最近一次录入"""
+        if not self._undo_stack:
+            self._update_status("没有可撤销的操作")
+            return
+        col, row, old_val = self._undo_stack.pop()
+        # 恢复旧值
+        self.handler.write_cell(col, row, old_val if old_val != "" else "")
+        self._refresh_table()
+        self._update_row_sum()
+        # 删除记录面板最后一行
+        self._log_text.config(state=tk.NORMAL)
+        last_line = self._log_text.index("end-2l")
+        self._log_text.delete(f"{last_line} + 1 line", "end-1c")
+        self._log_text.config(state=tk.DISABLED)
+        old_display = old_val if old_val != "" else "(空)"
+        self._update_status(f"已撤销 {col_letter(col)}{row}，恢复为 {old_display}")
 
     def _log_entry(self, col_label: str, row: int, value):
         """追加输入记录到右侧面板"""

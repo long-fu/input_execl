@@ -7,12 +7,14 @@ import tkinter as tk
 class InputBar(tk.Frame):
     def __init__(self, parent, on_submit: callable, on_cell_change: callable | None = None,
                  on_lock_toggle: callable | None = None,
-                 on_clear_row: callable | None = None):
+                 on_clear_row: callable | None = None,
+                 on_undo: callable | None = None):
         super().__init__(parent)
         self._on_submit = on_submit
         self._on_cell_change = on_cell_change
         self._on_lock_toggle = on_lock_toggle
         self._on_clear_row = on_clear_row
+        self._on_undo = on_undo
 
         # 列号
         tk.Label(self, text="列号:").pack(side=tk.LEFT, padx=(0, 2))
@@ -37,6 +39,10 @@ class InputBar(tk.Frame):
         self.submit_btn = tk.Button(self, text="清空行", command=self._handle_clear_row,
                                      width=8, state=tk.DISABLED)
         self.submit_btn.pack(side=tk.LEFT)
+
+        # 撤销按钮
+        self.undo_btn = tk.Button(self, text="撤销", command=self._handle_undo, width=6)
+        self.undo_btn.pack(side=tk.LEFT, padx=(5, 0))
 
         # 锁定行号复选框
         self._lock_var = tk.BooleanVar(value=False)
@@ -171,6 +177,11 @@ class InputBar(tk.Frame):
         """清空锁定行数据"""
         if self._on_clear_row:
             self._on_clear_row()
+
+    def _handle_undo(self):
+        """撤销最近一次录入"""
+        if self._on_undo:
+            self._on_undo()
 
     def lock_row(self):
         """锁定行号输入框（固定行模式）"""
