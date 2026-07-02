@@ -255,7 +255,7 @@ class TableView(tk.Frame):
     def scroll_to(self, col: int, row: int):
         if self._num_rows == 0:
             return
-        self.canvas.update_idletasks()
+        self.update_idletasks()
         cw = self.canvas.winfo_width()
         ch = self.canvas.winfo_height()
         th = self._total_h()
