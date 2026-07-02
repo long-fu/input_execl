@@ -30,6 +30,11 @@ class InputBar(tk.Frame):
         self._sum_label = tk.Label(self, text="合计: 0", fg="#888888")
         self._sum_label.pack(side=tk.LEFT, padx=(0, 10))
 
+        # 警戒值
+        tk.Label(self, text="警戒值:").pack(side=tk.LEFT, padx=(0, 2))
+        self.alert_entry = tk.Entry(self, width=6)
+        self.alert_entry.pack(side=tk.LEFT, padx=(0, 10))
+
         # 数值
         tk.Label(self, text="数值:").pack(side=tk.LEFT, padx=(0, 2))
         self.value_entry = tk.Entry(self, width=24)
@@ -167,6 +172,17 @@ class InputBar(tk.Frame):
     def set_row(self, row: int):
         self.row_entry.delete(0, tk.END)
         self.row_entry.insert(0, str(row))
+
+    def get_alert_threshold(self) -> int | None:
+        """返回警戒值，为空或非整数时返回 None"""
+        text = self.alert_entry.get().strip()
+        if not text:
+            return None
+        try:
+            n = int(text)
+            return n if n >= 0 else None
+        except ValueError:
+            return None
 
     def _on_lock_changed(self):
         """复选框切换锁定状态"""
