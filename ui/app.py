@@ -214,15 +214,15 @@ class App:
 
     def _on_submit(self, col: int, row: int, value: str):
         try:
-            new_val = float(value)
+            new_val = int(value)
         except (ValueError, TypeError):
-            return  # 非数字不应到达（_handle_submit 已校验）
+            return  # 非整数不应到达（_handle_submit 已校验）
 
         overwritten = False
         existing = self.handler.read_cell(col, row)
         if existing != "":
             try:
-                new_val += float(existing)
+                new_val += int(existing)
             except (ValueError, TypeError):
                 overwritten = True  # 现有值非数字，被覆盖
         self.handler.write_cell(col, row, new_val)
@@ -310,11 +310,11 @@ class App:
             matrix = self.handler.get_matrix()
             r = self.navigator.fixed_row - 1  # matrix 索引从 0 开始
             if 0 <= r < len(matrix):
-                total = 0.0
+                total = 0
                 for val in matrix[r]:
                     if val is not None and str(val).strip() != "":
                         try:
-                            total += float(val)
+                            total += int(val)
                         except (ValueError, TypeError):
                             pass
                 self.input_bar.set_row_sum(total)

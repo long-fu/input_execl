@@ -135,12 +135,12 @@ class InputBar(tk.Frame):
             self.row_entry.config(bg="#ffe0e0")
             return
 
-        # 校验数值：必须为数字
+        # 校验数值：必须为整数
         if not value.strip():
             self.value_entry.config(bg="#ffe0e0")
             return
         try:
-            float(value)
+            int(value)
         except ValueError:
             self.value_entry.config(bg="#ffe0e0")
             return
@@ -201,9 +201,9 @@ class InputBar(tk.Frame):
     def clear_column(self):
         self.col_entry.delete(0, tk.END)
 
-    def set_row_sum(self, total: float):
+    def set_row_sum(self, total: int):
         """更新行合计显示"""
-        if abs(total) < 1e-9:
+        if total == 0:
             self._sum_label.config(text="合计: 0", fg="#888888")
         else:
             self._sum_label.config(text=f"合计: {total}", fg="#0066cc")
