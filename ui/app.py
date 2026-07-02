@@ -259,7 +259,7 @@ class App:
         self.input_bar.focus_column()
 
         self._update_row_sum()
-        self._log_entry(col_letter(col), row, new_val)
+        self._log_entry(str(col), row, new_val)
         msg = f"已写入 {col_letter(col)}{row} = {new_val}"
         if overwritten:
             msg += " (覆盖非数字原值)"
