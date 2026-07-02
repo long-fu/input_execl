@@ -345,6 +345,10 @@ class App:
         self._log_text.config(state=tk.DISABLED)
         old_display = old_val if old_val != "" else "(空)"
         self._update_status(f"已撤销 {col_letter(col)}{row}，恢复为 {old_display}")
+        # 清空输入栏，光标回到列号
+        self.input_bar.clear_column()
+        self.input_bar.clear_value()
+        self.input_bar.focus_column()
 
     def _log_entry(self, col_label: str, row: int, value):
         """追加输入记录到右侧面板"""
