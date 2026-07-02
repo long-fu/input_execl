@@ -258,12 +258,22 @@ class TableView(tk.Frame):
         self.update_idletasks()
         cw = self.canvas.winfo_width()
         ch = self.canvas.winfo_height()
-        th = self._total_h()
+
+        # 使用目标列/行计算有效区域，确保可以滚动到当前矩阵之外的位置
+        effective_cols = max(self._num_cols, col)
+        effective_rows = max(self._num_rows, row)
+        tw = ROW_NO_W + SEP_W + effective_cols * COL_W
+        th = HEADER_H + effective_rows * ROW_H
+
+        # 临时扩展 scrollregion，使 xview_moveto 可以滚动到目标位置
+        self.canvas.configure(scrollregion=(0, 0, tw, th))
+
+        # Tk 的 xview_moveto(f) / yview_moveto(f) 将视口左/上边缘
+        # 定位到 f * scrollregion_width/height，因此分母应为 tw/th
         if th > ch > 0:
             y = self._row_y(row) - ch // 2
-            self.canvas.yview_moveto(max(0, min(1, y / (th - ch))))
-        tw = self._total_w()
+            self.canvas.yview_moveto(max(0, min(1, y / th)))
         if tw > cw > 0:
             x = self._col_x(col) - cw // 2
-            self.canvas.xview_moveto(max(0, min(1, x / (tw - cw))))
+            self.canvas.xview_moveto(max(0, min(1, x / tw)))
         self._pin()
