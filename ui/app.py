@@ -362,6 +362,10 @@ class App:
             self.handler.write_cell(c, r, "")
         self._refresh_table()
         self._update_row_sum()
+        # 清空输入记录面板
+        self._log_text.config(state=tk.NORMAL)
+        self._log_text.delete("1.0", tk.END)
+        self._log_text.config(state=tk.DISABLED)
         self._update_status(f"已清空第 {r} 行")
         self._update_alert_list()
 
