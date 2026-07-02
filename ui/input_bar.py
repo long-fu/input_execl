@@ -30,14 +30,9 @@ class InputBar(tk.Frame):
         self._sum_label = tk.Label(self, text="合计: 0", fg="#888888")
         self._sum_label.pack(side=tk.LEFT, padx=(0, 10))
 
-        # 警戒值
-        tk.Label(self, text="警戒值:").pack(side=tk.LEFT, padx=(0, 2))
-        self.alert_entry = tk.Entry(self, width=6)
-        self.alert_entry.pack(side=tk.LEFT, padx=(0, 10))
-
         # 数值
         tk.Label(self, text="数值:").pack(side=tk.LEFT, padx=(0, 2))
-        self.value_entry = tk.Entry(self, width=24)
+        self.value_entry = tk.Entry(self, width=10)
         self.value_entry.pack(side=tk.LEFT, padx=(0, 10))
 
         # 清空行按钮（锁定后可用）
@@ -48,6 +43,11 @@ class InputBar(tk.Frame):
         # 撤销按钮
         self.undo_btn = tk.Button(self, text="撤销", command=self._handle_undo, width=6)
         self.undo_btn.pack(side=tk.LEFT, padx=(5, 0))
+
+        # 警戒值
+        tk.Label(self, text="警戒值:").pack(side=tk.LEFT, padx=(10, 2))
+        self.alert_entry = tk.Entry(self, width=6)
+        self.alert_entry.pack(side=tk.LEFT, padx=(0, 5))
 
         # 锁定行号复选框
         self._lock_var = tk.BooleanVar(value=False)
