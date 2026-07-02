@@ -131,8 +131,6 @@ class App:
         # 快捷键
         self._bind_shortcuts()
 
-        # 默认固定行模式
-        self._set_mode(MODE_FIXED_ROW)
         self._update_row_sum()
         self._update_title()
 
