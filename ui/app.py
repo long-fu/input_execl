@@ -446,7 +446,7 @@ class App:
                 try:
                     if int(val) > threshold:
                         col_num = c_idx + 1
-                        lines.append(f"{col_num} × {self.navigator.fixed_row} = {val}")
+                        lines.append(f"{col_num},{self.navigator.fixed_row}={val}")
                 except (ValueError, TypeError):
                     pass
 
