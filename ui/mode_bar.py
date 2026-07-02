@@ -1,6 +1,6 @@
 """模式切换栏 — 逐格/按列递增/按行递增"""
 import tkinter as tk
-from core.navigator import MODE_SINGLE, MODE_COL_INC, MODE_ROW_INC, MODE_LABELS
+from core.navigator import MODE_SINGLE, MODE_COL_INC, MODE_ROW_INC, MODE_FIXED_ROW, MODE_LABELS
 
 
 class ModeBar(tk.Frame):
@@ -11,7 +11,7 @@ class ModeBar(tk.Frame):
 
         tk.Label(self, text="模式:").pack(side=tk.LEFT, padx=(0, 10))
 
-        for mode in [MODE_SINGLE, MODE_COL_INC, MODE_ROW_INC]:
+        for mode in [MODE_SINGLE, MODE_COL_INC, MODE_ROW_INC, MODE_FIXED_ROW]:
             rb = tk.Radiobutton(
                 self, text=MODE_LABELS[mode], variable=self._var,
                 value=mode, command=self._changed

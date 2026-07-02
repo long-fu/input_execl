@@ -9,7 +9,7 @@ from ui.input_bar import InputBar
 from ui.table_view import TableView
 from ui.mode_bar import ModeBar
 from core.excel_handler import ExcelHandler
-from core.navigator import Navigator, MODE_SINGLE, MODE_COL_INC, MODE_ROW_INC, MODE_LABELS
+from core.navigator import Navigator, MODE_SINGLE, MODE_COL_INC, MODE_ROW_INC, MODE_FIXED_ROW, MODE_LABELS
 from core.utils import col_letter
 
 # 可用的中文字体优先级列表（Linux）
@@ -51,6 +51,7 @@ class App:
 
         self.handler = ExcelHandler()
         self.navigator = Navigator()
+        self._undo_stack: list[tuple[int, int, object]] = []  # (col, row, old_value)
 
         # 菜单
         self._build_menu()
@@ -60,20 +61,63 @@ class App:
             self.root,
             on_submit=self._on_submit,
             on_cell_change=self._on_cell_change,
+            on_lock_toggle=self._on_lock_toggle,
+            on_clear_row=self._on_clear_row,
+            on_undo=self._undo,
         )
         self.input_bar.pack(fill=tk.X, padx=10, pady=(10, 2))
 
-        # 表格视图
+        # 表格 + 记录面板容器
+        self._main_frame = tk.Frame(self.root)
+        self._main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=2)
+        self._main_frame.grid_rowconfigure(0, weight=1)
+        self._main_frame.grid_columnconfigure(0, weight=1)
+
+        # 表格视图（左侧）
         self.table_view = TableView(
-            self.root, on_cell_click=self._on_cell_click,
+            self._main_frame, on_cell_click=self._on_cell_click,
             font_family=self._font_name, font_size=self._font_size,
         )
-        self.table_view.pack(fill=tk.BOTH, expand=True, padx=10, pady=2)
+        self.table_view.grid(row=0, column=0, sticky="nsew")
         self._refresh_table()
 
-        # 模式栏
+        # 输入记录面板（右侧，上方 60%）
+        log_frame = tk.Frame(self._main_frame, width=180)
+        log_frame.grid(row=0, column=1, sticky="ns", padx=(5, 0))
+        log_frame.grid_propagate(False)
+        log_frame.grid_rowconfigure(0, weight=6)  # 60%
+        log_frame.grid_rowconfigure(1, weight=4)  # 40%
+        log_frame.grid_columnconfigure(0, weight=1)
+
+        # 输入记录（上方）
+        log_top = tk.Frame(log_frame)
+        log_top.grid(row=0, column=0, sticky="nsew")
+        log_top.grid_rowconfigure(0, weight=1)
+        log_top.grid_columnconfigure(0, weight=1)
+        tk.Label(log_top, text="输入记录").pack()
+        self._log_text = tk.Text(log_top, width=20, state=tk.DISABLED,
+                                  font=(self._font_name, 10))
+        log_scroll = tk.Scrollbar(log_top, command=self._log_text.yview)
+        self._log_text.configure(yscrollcommand=log_scroll.set)
+        log_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        self._log_text.pack(fill=tk.BOTH, expand=True)
+
+        # 警戒列表（下方）
+        alert_bottom = tk.Frame(log_frame)
+        alert_bottom.grid(row=1, column=0, sticky="nsew", pady=(5, 0))
+        alert_bottom.grid_rowconfigure(0, weight=1)
+        alert_bottom.grid_columnconfigure(0, weight=1)
+        tk.Label(alert_bottom, text="警戒列表").pack()
+        self._alert_text = tk.Text(alert_bottom, width=20, state=tk.DISABLED,
+                                    fg="#cc0000", font=(self._font_name, 10))
+        alert_scroll = tk.Scrollbar(alert_bottom, command=self._alert_text.yview)
+        self._alert_text.configure(yscrollcommand=alert_scroll.set)
+        alert_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        self._alert_text.pack(fill=tk.BOTH, expand=True)
+
+        # 模式栏（已隐藏，默认固定行模式）
         self.mode_bar = ModeBar(self.root, on_mode_change=self._on_mode_change)
-        self.mode_bar.pack(fill=tk.X, padx=10, pady=2)
+        # self.mode_bar.pack(fill=tk.X, padx=10, pady=2)
 
         # 状态栏
         self.status_var = tk.StringVar()
@@ -87,6 +131,7 @@ class App:
         # 快捷键
         self._bind_shortcuts()
 
+        self._update_row_sum()
         self._update_title()
 
     def _setup_fonts(self):
@@ -145,19 +190,18 @@ class App:
         self.root.bind("<Control-o>", lambda e: self._file_open())
         self.root.bind("<Control-s>", lambda e: self._file_save())
         self.root.bind("<Control-n>", lambda e: self._file_new())
-        self.root.bind("<Control-Key-1>", lambda e: self._set_mode(MODE_SINGLE))
-        self.root.bind("<Control-Key-2>", lambda e: self._set_mode(MODE_COL_INC))
-        self.root.bind("<Control-Key-3>", lambda e: self._set_mode(MODE_ROW_INC))
         self.root.bind("<Escape>", lambda e: self.input_bar.clear_all())
+        self.root.bind("<Control-z>", lambda e: self._undo())
 
     # ── 文件操作 ──
 
     def _file_new(self):
-        if self.handler.filepath is None:
+        if self.handler.filepath is not None:
             if not messagebox.askyesno("未保存更改", "当前文件尚未保存，确定放弃吗？"):
                 return
         self.handler.new()
         self.navigator.reset()
+        self._undo_stack.clear()
         self.input_bar.clear_all()
         self.input_bar.set_column(1)
         self.input_bar.set_row(1)
@@ -166,7 +210,7 @@ class App:
         self._update_status()
 
     def _file_open(self):
-        if self.handler.filepath is None:
+        if self.handler.filepath is not None:
             if not messagebox.askyesno("未保存更改", "当前文件尚未保存，确定放弃吗？"):
                 return
         path = filedialog.askopenfilename(
@@ -177,6 +221,7 @@ class App:
         try:
             self.handler = ExcelHandler(path)
             self.navigator.reset()
+            self._undo_stack.clear()
             self.input_bar.clear_all()
             self.input_bar.set_column(1)
             self.input_bar.set_row(1)
@@ -213,7 +258,26 @@ class App:
     # ── 录入回调 ──
 
     def _on_submit(self, col: int, row: int, value: str):
-        self.handler.write_cell(col, row, value)
+        try:
+            new_val = int(value)
+        except (ValueError, TypeError):
+            return  # 非整数不应到达（_handle_submit 已校验）
+
+        overwritten = False
+        existing = self.handler.read_cell(col, row)
+        # 保存旧值到撤销栈
+        self._undo_stack.append((col, row, existing))
+        if existing != "" and existing is not None:
+            try:
+                # 使用 float 避免 int() 截断，再转为 int（仅允许整数值）
+                existing_num = float(str(existing))
+                if existing_num != int(existing_num):
+                    overwritten = True  # 非整数值，覆盖
+                else:
+                    new_val += int(existing_num)
+            except (ValueError, TypeError):
+                overwritten = True  # 现有值非数字，被覆盖
+        self.handler.write_cell(col, row, new_val)
         self.navigator.set_position(col, row)
         self._refresh_table()
 
@@ -222,42 +286,205 @@ class App:
         self.table_view.scroll_to(col, row)
 
         # 根据模式推进位置
-        next_col, next_row = self.navigator.advance()
-        self.input_bar.set_column(next_col)
+        _, next_row = self.navigator.advance()
+        self.input_bar.clear_column()
         self.input_bar.set_row(next_row)
         self.input_bar.clear_value()
-        self.input_bar.focus_value()
+        self.input_bar.focus_column()
 
-        self._update_status(f"已写入 {col_letter(col)}{row} = {value}")
+        self._update_row_sum()
+        self._log_entry(str(col), row, value)
+        msg = f"已写入 {col_letter(col)}{row} = {new_val}"
+        if overwritten:
+            msg += " (覆盖非数字原值)"
+        self._update_status(msg)
+        self._update_alert_list()
 
     def _on_cell_change(self, col: int, row: int):
         """输入栏列号/行号变化时高亮对应单元格"""
+        self.navigator.set_position(col, row)
         self.table_view.highlight(col, row)
         self.table_view.scroll_to(col, row)
 
     def _on_cell_click(self, col: int, row: int):
         """表格单元格被点击 → 填充输入栏"""
         self.input_bar.set_column(col)
-        self.input_bar.set_row(row)
-        current_value = self.handler.read_cell(col, row)
-        self.input_bar.set_value(current_value)
-        self.table_view.highlight(col, row)
-        self.table_view.scroll_to(col, row)
+        if self.navigator.mode == MODE_FIXED_ROW:
+            # 固定行模式：点击单元格更新固定行目标
+            self.navigator.fixed_row = row
+            self.navigator.set_position(col, row)
+            self.input_bar.set_row(row)
+            current_value = self.handler.read_cell(col, row)
+            self.input_bar.set_value(current_value)
+            self.table_view.highlight(col, row)
+            self.table_view.scroll_to(col, row)
+            self._update_row_sum()
+        else:
+            self.navigator.set_position(col, row)
+            self.input_bar.set_row(row)
+            current_value = self.handler.read_cell(col, row)
+            self.input_bar.set_value(current_value)
+            self.table_view.highlight(col, row)
+            self.table_view.scroll_to(col, row)
         self.input_bar.focus_value()
 
     def _on_mode_change(self, mode: str):
         self.navigator.set_mode(mode)
+        if mode == MODE_FIXED_ROW:
+            self.input_bar.lock_row()
+            self.input_bar.set_row(self.navigator.fixed_row)
+        else:
+            self.input_bar.unlock_row()
+        self._update_row_sum()
         self._update_status()
+        self._update_alert_list()
+
+    def _on_lock_toggle(self, locked: bool):
+        """复选框切换固定行模式"""
+        if locked:
+            self._set_mode(MODE_FIXED_ROW)
+        else:
+            self._set_mode(MODE_SINGLE)
+
+    def _on_clear_row(self):
+        """清空锁定行所有数据"""
+        if self.navigator.mode != MODE_FIXED_ROW or not self.navigator.fixed_row:
+            return
+        r = self.navigator.fixed_row
+        mc = self.handler.max_col
+        # 保存旧值到撤销栈（从右到左，撤销时从左到右恢复）
+        for c in range(mc, 0, -1):
+            old = self.handler.read_cell(c, r)
+            self._undo_stack.append((c, r, old))
+        for c in range(1, mc + 1):
+            self.handler.write_cell(c, r, "")
+        self._refresh_table()
+        self._update_row_sum()
+        # 清空输入记录面板
+        self._log_text.config(state=tk.NORMAL)
+        self._log_text.delete("1.0", tk.END)
+        self._log_text.config(state=tk.DISABLED)
+        self._update_status(f"已清空第 {r} 行")
+        self._update_alert_list()
+
+    def _undo(self):
+        """撤销最近一次录入"""
+        if not self._undo_stack:
+            self._update_status("没有可撤销的操作")
+            return
+        col, row, old_val = self._undo_stack.pop()
+        # 恢复旧值
+        self.handler.write_cell(col, row, old_val if old_val != "" else "")
+        self._refresh_table()
+        self._update_row_sum()
+        # 删除记录面板最后一行
+        self._log_text.config(state=tk.NORMAL)
+        last_start = self._log_text.index("end-2l linestart")
+        self._log_text.delete(last_start, "end-1c")
+        self._log_text.config(state=tk.DISABLED)
+        old_display = old_val if old_val != "" else "(空)"
+        self._update_status(f"已撤销 {col_letter(col)}{row}，恢复为 {old_display}")
+        # 清空输入栏，光标回到列号
+        self.input_bar.clear_column()
+        self.input_bar.clear_value()
+        self.input_bar.focus_column()
+        self._update_alert_list()
+
+    def _log_entry(self, col_label: str, row: int, value):
+        """追加输入记录到右侧面板"""
+        self._log_text.config(state=tk.NORMAL)
+        self._log_text.insert(tk.END, f"{col_label};{row};{value}\n")
+        self._log_text.see(tk.END)
+        self._log_text.config(state=tk.DISABLED)
+
+    def _update_row_sum(self):
+        """更新锁定行的值合计"""
+        if self.navigator.mode == MODE_FIXED_ROW and self.navigator.fixed_row:
+            matrix = self.handler.get_matrix()
+            r = self.navigator.fixed_row - 1  # matrix 索引从 0 开始
+            if 0 <= r < len(matrix):
+                total = 0
+                for val in matrix[r]:
+                    if val is not None and str(val).strip() != "":
+                        try:
+                            total += int(val)
+                        except (ValueError, TypeError):
+                            pass
+                self.input_bar.set_row_sum(total)
+                return
+        self.input_bar.set_row_sum(0)
+
+    def _compute_alert_cols(self) -> set[int]:
+        """计算需要标红的列集合（仅在固定行模式下生效）"""
+        if self.navigator.mode != MODE_FIXED_ROW or not self.navigator.fixed_row:
+            return set()
+        threshold = self.input_bar.get_alert_threshold()
+        if threshold is None:
+            return set()
+        matrix = self.handler.get_matrix()
+        r = self.navigator.fixed_row - 1
+        if r < 0 or r >= len(matrix):
+            return set()
+        alert_cols = set()
+        for c_idx, val in enumerate(matrix[r]):
+            if val is not None and str(val).strip() != "":
+                try:
+                    if int(val) > threshold:
+                        alert_cols.add(c_idx + 1)
+                except (ValueError, TypeError):
+                    pass
+        return alert_cols
+
+    def _update_alert_list(self):
+        """更新右侧警戒列表：显示固定行中超过警戒值的单元格"""
+        self._alert_text.config(state=tk.NORMAL)
+        self._alert_text.delete("1.0", tk.END)
+
+        if self.navigator.mode != MODE_FIXED_ROW or not self.navigator.fixed_row:
+            self._alert_text.config(state=tk.DISABLED)
+            return
+        threshold = self.input_bar.get_alert_threshold()
+        if threshold is None:
+            self._alert_text.config(state=tk.DISABLED)
+            return
+
+        matrix = self.handler.get_matrix()
+        r = self.navigator.fixed_row - 1
+        if r < 0 or r >= len(matrix):
+            self._alert_text.config(state=tk.DISABLED)
+            return
+
+        lines = []
+        for c_idx, val in enumerate(matrix[r]):
+            if val is not None and str(val).strip() != "":
+                try:
+                    if int(val) > threshold:
+                        col_num = c_idx + 1
+                        lines.append(f"{col_num},{self.navigator.fixed_row}={val}")
+                except (ValueError, TypeError):
+                    pass
+
+        if lines:
+            self._alert_text.insert(tk.END, "\n".join(lines))
+        self._alert_text.config(state=tk.DISABLED)
 
     # ── 辅助方法 ──
 
     def _refresh_table(self):
-        self.table_view.refresh(self.handler.get_matrix(), self.handler)
+        alert_cols = self._compute_alert_cols()
+        self.table_view.refresh(self.handler.get_matrix(), self.handler, alert_cols)
 
     def _set_mode(self, mode: str):
         self.navigator.set_mode(mode)
         self.mode_bar.set_mode(mode)
+        if mode == MODE_FIXED_ROW:
+            self.input_bar.lock_row()
+            self.input_bar.set_row(self.navigator.fixed_row)
+        else:
+            self.input_bar.unlock_row()
+        self._update_row_sum()
         self._update_status()
+        self._update_alert_list()
 
     def _update_title(self):
         fp = self.handler.filepath

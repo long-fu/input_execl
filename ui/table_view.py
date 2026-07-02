@@ -118,7 +118,7 @@ class TableView(tk.Frame):
 
     # ── 绘制 ──
 
-    def refresh(self, matrix: list[list], handler):
+    def refresh(self, matrix: list[list], handler, alert_cols: set | None = None):
         self._matrix = matrix
         self._current_highlight = None
         self.canvas.delete("all")
@@ -152,11 +152,15 @@ class TableView(tk.Frame):
         # 列表头 — pin_top only
         for ci in range(1, self._num_cols + 1):
             x = self._col_x(ci)
+            is_alert = alert_cols and ci in alert_cols
+            header_fill = "#ffe0e0" if is_alert else "#e8e8e8"
+            header_outline = "#e0a0a0" if is_alert else "#c0c0c0"
+            text_fill = "#cc0000" if is_alert else "#333"
             self.canvas.create_rectangle(x, 0, x + COL_W, HEADER_H,
-                                         fill="#e8e8e8", outline="#c0c0c0",
+                                         fill=header_fill, outline=header_outline,
                                          tags=("pin_top",))
             self.canvas.create_text(x + COL_W // 2, HEADER_H // 2,
-                                    text=col_letter(ci), fill="#333",
+                                    text=col_letter(ci), fill=text_fill,
                                     font=self._font_bold, tags=("pin_top",))
 
         # ── 行号列 — pin_left ──
@@ -186,12 +190,17 @@ class TableView(tk.Frame):
                 text = str(val) if val is not None else ""
                 display = text[:16] + "…" if len(text) > 17 else text
 
+                is_alert = alert_cols and c in alert_cols
+                cell_fill = "#ffe0e0" if is_alert else "white"
+                cell_outline = "#e0a0a0" if is_alert else "#e0e0e0"
+                cell_text_fill = "#cc0000" if is_alert else "#222"
+
                 tag = f"cell_{r}_{c}"
                 self.canvas.create_rectangle(x, y, x + COL_W, y + ROW_H,
-                                             fill="white", outline="#e0e0e0",
+                                             fill=cell_fill, outline=cell_outline,
                                              tags=("cell", tag))
                 self.canvas.create_text(x + COL_W // 2, y + ROW_H // 2,
-                                        text=display, fill="#222", font=self._font,
+                                        text=display, fill=cell_text_fill, font=self._font,
                                         tags=("cell", tag))
 
         self._pin()
@@ -215,7 +224,6 @@ class TableView(tk.Frame):
         if row < 1 or row > self._num_rows:
             return
 
-        self.highlight(col, row)
         self._on_cell_click(col, row)
 
     # ── 高亮 ──
@@ -247,14 +255,25 @@ class TableView(tk.Frame):
     def scroll_to(self, col: int, row: int):
         if self._num_rows == 0:
             return
+        self.update_idletasks()
         cw = self.canvas.winfo_width()
         ch = self.canvas.winfo_height()
-        th = self._total_h()
+
+        # 使用目标列/行计算有效区域，确保可以滚动到当前矩阵之外的位置
+        effective_cols = max(self._num_cols, col)
+        effective_rows = max(self._num_rows, row)
+        tw = ROW_NO_W + SEP_W + effective_cols * COL_W
+        th = HEADER_H + effective_rows * ROW_H
+
+        # 临时扩展 scrollregion，使 xview_moveto 可以滚动到目标位置
+        self.canvas.configure(scrollregion=(0, 0, tw, th))
+
+        # Tk 的 xview_moveto(f) / yview_moveto(f) 将视口左/上边缘
+        # 定位到 f * scrollregion_width/height，因此分母应为 tw/th
         if th > ch > 0:
             y = self._row_y(row) - ch // 2
-            self.canvas.yview_moveto(max(0, min(1, y / (th - ch))))
-        tw = self._total_w()
+            self.canvas.yview_moveto(max(0, min(1, y / th)))
         if tw > cw > 0:
             x = self._col_x(col) - cw // 2
-            self.canvas.xview_moveto(max(0, min(1, x / (tw - cw))))
+            self.canvas.xview_moveto(max(0, min(1, x / tw)))
         self._pin()
