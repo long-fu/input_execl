@@ -340,8 +340,8 @@ class App:
         self._update_row_sum()
         # 删除记录面板最后一行
         self._log_text.config(state=tk.NORMAL)
-        last_line = self._log_text.index("end-2l")
-        self._log_text.delete(f"{last_line} + 1 line", "end-1c")
+        last_start = self._log_text.index("end-2l linestart")
+        self._log_text.delete(last_start, "end-1c")
         self._log_text.config(state=tk.DISABLED)
         old_display = old_val if old_val != "" else "(空)"
         self._update_status(f"已撤销 {col_letter(col)}{row}，恢复为 {old_display}")
