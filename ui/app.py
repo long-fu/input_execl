@@ -81,17 +81,39 @@ class App:
         self.table_view.grid(row=0, column=0, sticky="nsew")
         self._refresh_table()
 
-        # 输入记录面板（右侧）
+        # 输入记录面板（右侧，上方 60%）
         log_frame = tk.Frame(self._main_frame, width=180)
         log_frame.grid(row=0, column=1, sticky="ns", padx=(5, 0))
         log_frame.grid_propagate(False)
-        tk.Label(log_frame, text="输入记录").pack()
-        self._log_text = tk.Text(log_frame, width=20, state=tk.DISABLED,
+        log_frame.grid_rowconfigure(0, weight=6)  # 60%
+        log_frame.grid_rowconfigure(1, weight=4)  # 40%
+        log_frame.grid_columnconfigure(0, weight=1)
+
+        # 输入记录（上方）
+        log_top = tk.Frame(log_frame)
+        log_top.grid(row=0, column=0, sticky="nsew")
+        log_top.grid_rowconfigure(0, weight=1)
+        log_top.grid_columnconfigure(0, weight=1)
+        tk.Label(log_top, text="输入记录").pack()
+        self._log_text = tk.Text(log_top, width=20, state=tk.DISABLED,
                                   font=(self._font_name, 10))
-        log_scroll = tk.Scrollbar(log_frame, command=self._log_text.yview)
+        log_scroll = tk.Scrollbar(log_top, command=self._log_text.yview)
         self._log_text.configure(yscrollcommand=log_scroll.set)
         log_scroll.pack(side=tk.RIGHT, fill=tk.Y)
         self._log_text.pack(fill=tk.BOTH, expand=True)
+
+        # 警戒列表（下方）
+        alert_bottom = tk.Frame(log_frame)
+        alert_bottom.grid(row=1, column=0, sticky="nsew", pady=(5, 0))
+        alert_bottom.grid_rowconfigure(0, weight=1)
+        alert_bottom.grid_columnconfigure(0, weight=1)
+        tk.Label(alert_bottom, text="警戒列表").pack()
+        self._alert_text = tk.Text(alert_bottom, width=20, state=tk.DISABLED,
+                                    fg="#cc0000", font=(self._font_name, 10))
+        alert_scroll = tk.Scrollbar(alert_bottom, command=self._alert_text.yview)
+        self._alert_text.configure(yscrollcommand=alert_scroll.set)
+        alert_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        self._alert_text.pack(fill=tk.BOTH, expand=True)
 
         # 模式栏（已隐藏，默认固定行模式）
         self.mode_bar = ModeBar(self.root, on_mode_change=self._on_mode_change)
@@ -269,6 +291,7 @@ class App:
         if overwritten:
             msg += " (覆盖非数字原值)"
         self._update_status(msg)
+        self._update_alert_list()
 
     def _on_cell_change(self, col: int, row: int):
         """输入栏列号/行号变化时高亮对应单元格"""
@@ -307,6 +330,7 @@ class App:
             self.input_bar.unlock_row()
         self._update_row_sum()
         self._update_status()
+        self._update_alert_list()
 
     def _on_lock_toggle(self, locked: bool):
         """复选框切换固定行模式"""
@@ -327,6 +351,7 @@ class App:
         self._refresh_table()
         self._update_row_sum()
         self._update_status(f"已清空第 {r} 行")
+        self._update_alert_list()
 
     def _undo(self):
         """撤销最近一次录入"""
@@ -349,6 +374,7 @@ class App:
         self.input_bar.clear_column()
         self.input_bar.clear_value()
         self.input_bar.focus_column()
+        self._update_alert_list()
 
     def _log_entry(self, col_label: str, row: int, value):
         """追加输入记录到右侧面板"""
@@ -395,6 +421,39 @@ class App:
                     pass
         return alert_cols
 
+    def _update_alert_list(self):
+        """更新右侧警戒列表：显示固定行中超过警戒值的单元格"""
+        self._alert_text.config(state=tk.NORMAL)
+        self._alert_text.delete("1.0", tk.END)
+
+        if self.navigator.mode != MODE_FIXED_ROW or not self.navigator.fixed_row:
+            self._alert_text.config(state=tk.DISABLED)
+            return
+        threshold = self.input_bar.get_alert_threshold()
+        if threshold is None:
+            self._alert_text.config(state=tk.DISABLED)
+            return
+
+        matrix = self.handler.get_matrix()
+        r = self.navigator.fixed_row - 1
+        if r < 0 or r >= len(matrix):
+            self._alert_text.config(state=tk.DISABLED)
+            return
+
+        lines = []
+        for c_idx, val in enumerate(matrix[r]):
+            if val is not None and str(val).strip() != "":
+                try:
+                    if int(val) > threshold:
+                        col_num = c_idx + 1
+                        lines.append(f"{col_num} × {self.navigator.fixed_row} = {val}")
+                except (ValueError, TypeError):
+                    pass
+
+        if lines:
+            self._alert_text.insert(tk.END, "\n".join(lines))
+        self._alert_text.config(state=tk.DISABLED)
+
     # ── 辅助方法 ──
 
     def _refresh_table(self):
@@ -410,6 +469,7 @@ class App:
         else:
             self.input_bar.unlock_row()
         self._update_status()
+        self._update_alert_list()
 
     def _update_title(self):
         fp = self.handler.filepath
