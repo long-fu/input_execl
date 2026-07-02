@@ -131,6 +131,8 @@ class App:
         # 快捷键
         self._bind_shortcuts()
 
+        # 默认固定行模式
+        self._set_mode(MODE_FIXED_ROW)
         self._update_row_sum()
         self._update_title()
 
@@ -196,11 +198,12 @@ class App:
     # ── 文件操作 ──
 
     def _file_new(self):
-        if self.handler.filepath is None:
+        if self.handler.filepath is not None:
             if not messagebox.askyesno("未保存更改", "当前文件尚未保存，确定放弃吗？"):
                 return
         self.handler.new()
         self.navigator.reset()
+        self._undo_stack.clear()
         self.input_bar.clear_all()
         self.input_bar.set_column(1)
         self.input_bar.set_row(1)
@@ -209,7 +212,7 @@ class App:
         self._update_status()
 
     def _file_open(self):
-        if self.handler.filepath is None:
+        if self.handler.filepath is not None:
             if not messagebox.askyesno("未保存更改", "当前文件尚未保存，确定放弃吗？"):
                 return
         path = filedialog.askopenfilename(
@@ -220,6 +223,7 @@ class App:
         try:
             self.handler = ExcelHandler(path)
             self.navigator.reset()
+            self._undo_stack.clear()
             self.input_bar.clear_all()
             self.input_bar.set_column(1)
             self.input_bar.set_row(1)
@@ -265,9 +269,14 @@ class App:
         existing = self.handler.read_cell(col, row)
         # 保存旧值到撤销栈
         self._undo_stack.append((col, row, existing))
-        if existing != "":
+        if existing != "" and existing is not None:
             try:
-                new_val += int(existing)
+                # 使用 float 避免 int() 截断，再转为 int（仅允许整数值）
+                existing_num = float(str(existing))
+                if existing_num != int(existing_num):
+                    overwritten = True  # 非整数值，覆盖
+                else:
+                    new_val += int(existing_num)
             except (ValueError, TypeError):
                 overwritten = True  # 现有值非数字，被覆盖
         self.handler.write_cell(col, row, new_val)
@@ -338,7 +347,6 @@ class App:
             self._set_mode(MODE_FIXED_ROW)
         else:
             self._set_mode(MODE_SINGLE)
-        self._update_row_sum()
 
     def _on_clear_row(self):
         """清空锁定行所有数据"""
@@ -346,6 +354,10 @@ class App:
             return
         r = self.navigator.fixed_row
         mc = self.handler.max_col
+        # 保存旧值到撤销栈（从右到左，撤销时从左到右恢复）
+        for c in range(mc, 0, -1):
+            old = self.handler.read_cell(c, r)
+            self._undo_stack.append((c, r, old))
         for c in range(1, mc + 1):
             self.handler.write_cell(c, r, "")
         self._refresh_table()
@@ -468,6 +480,7 @@ class App:
             self.input_bar.set_row(self.navigator.fixed_row)
         else:
             self.input_bar.unlock_row()
+        self._update_row_sum()
         self._update_status()
         self._update_alert_list()
 
