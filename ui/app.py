@@ -65,13 +65,31 @@ class App:
         )
         self.input_bar.pack(fill=tk.X, padx=10, pady=(10, 2))
 
-        # 表格视图
+        # 表格 + 记录面板容器
+        self._main_frame = tk.Frame(self.root)
+        self._main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=2)
+        self._main_frame.grid_rowconfigure(0, weight=1)
+        self._main_frame.grid_columnconfigure(0, weight=1)
+
+        # 表格视图（左侧）
         self.table_view = TableView(
-            self.root, on_cell_click=self._on_cell_click,
+            self._main_frame, on_cell_click=self._on_cell_click,
             font_family=self._font_name, font_size=self._font_size,
         )
-        self.table_view.pack(fill=tk.BOTH, expand=True, padx=10, pady=2)
+        self.table_view.grid(row=0, column=0, sticky="nsew")
         self._refresh_table()
+
+        # 输入记录面板（右侧）
+        log_frame = tk.Frame(self._main_frame, width=180)
+        log_frame.grid(row=0, column=1, sticky="ns", padx=(5, 0))
+        log_frame.grid_propagate(False)
+        tk.Label(log_frame, text="输入记录").pack()
+        self._log_text = tk.Text(log_frame, width=20, state=tk.DISABLED,
+                                  font=(self._font_name, 10))
+        log_scroll = tk.Scrollbar(log_frame, command=self._log_text.yview)
+        self._log_text.configure(yscrollcommand=log_scroll.set)
+        log_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        self._log_text.pack(fill=tk.BOTH, expand=True)
 
         # 模式栏（已隐藏，默认固定行模式）
         self.mode_bar = ModeBar(self.root, on_mode_change=self._on_mode_change)
@@ -241,6 +259,7 @@ class App:
         self.input_bar.focus_column()
 
         self._update_row_sum()
+        self._log_entry(col_letter(col), row, new_val)
         msg = f"已写入 {col_letter(col)}{row} = {new_val}"
         if overwritten:
             msg += " (覆盖非数字原值)"
@@ -303,6 +322,13 @@ class App:
         self._refresh_table()
         self._update_row_sum()
         self._update_status(f"已清空第 {r} 行")
+
+    def _log_entry(self, col_label: str, row: int, value):
+        """追加输入记录到右侧面板"""
+        self._log_text.config(state=tk.NORMAL)
+        self._log_text.insert(tk.END, f"{col_label};{row};{value}\n")
+        self._log_text.see(tk.END)
+        self._log_text.config(state=tk.DISABLED)
 
     def _update_row_sum(self):
         """更新锁定行的值合计"""
