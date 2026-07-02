@@ -1,0 +1,649 @@
+# Instincts generated from https://github.com/long-fu/input_execl
+# Generated: 2026-07-02T12:51:59.590Z
+# Version: 2.0
+# NOTE: This file supplements (does not replace) any existing curated instincts.
+# High-confidence manually curated instincts should be preserved alongside these.
+
+---
+id: input_execl-commit-conventional
+trigger: "when writing a commit message"
+confidence: 0.85
+domain: git
+source: repo-analysis
+source_repo: https://github.com/long-fu/input_execl
+---
+
+# Input_execl Commit Conventional
+
+## Action
+
+Use conventional commit format with prefixes: feat, fix, ci, docs
+
+## Evidence
+
+- 39 commits analyzed
+- Detected conventional commit pattern
+- Examples: feat: 新增固定行录入模式 (Ctrl+4), fix: 固定行模式不再自动递增列号
+
+---
+id: input_execl-commit-length
+trigger: "when writing a commit message"
+confidence: 0.6
+domain: git
+source: repo-analysis
+source_repo: https://github.com/long-fu/input_execl
+---
+
+# Input_execl Commit Length
+
+## Action
+
+Keep commit messages concise (~26 characters)
+
+## Evidence
+
+- Average commit message length: 26 chars
+- Based on 39 commits
+
+---
+id: input_execl-naming-files
+trigger: "when creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/long-fu/input_execl
+---
+
+# Input_execl Naming Files
+
+## Action
+
+Use camelCase naming convention
+
+## Evidence
+
+- Analyzed file naming patterns in repository
+- Dominant pattern: camelCase
+
+---
+id: input_execl-import-relative
+trigger: "when importing modules"
+confidence: 0.75
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/long-fu/input_execl
+---
+
+# Input_execl Import Relative
+
+## Action
+
+Use relative imports for project files
+
+## Evidence
+
+- Import analysis shows relative import pattern
+- Example: import { x } from '../lib/x'
+
+---
+id: input_execl-export-style
+trigger: "when exporting from a module"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/long-fu/input_execl
+---
+
+# Input_execl Export Style
+
+## Action
+
+Prefer named exports
+
+## Evidence
+
+- Export pattern analysis
+- Dominant style: named
+
+---
+id: input_execl-test-separate
+trigger: "when writing tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/long-fu/input_execl
+---
+
+# Input_execl Test Separate
+
+## Action
+
+Place tests in the tests/ or __tests__/ directory, mirroring src structure
+
+## Evidence
+
+- Separate test directory pattern detected
+- Tests live in dedicated test folders
+
+---
+id: input_execl-workflow-feature-development
+trigger: "when implementing a new feature"
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/long-fu/input_execl
+---
+
+# Input_execl Workflow Feature Development
+
+## Action
+
+Follow the feature-development workflow:
+1. Add feature implementation
+2. Add tests for feature
+3. Update documentation
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~13x per month
+- Files: **/*.test.*
+
+---
+id: input_execl-workflow-feature-implementation-across-app-and-input-bar
+trigger: "when doing feature implementation across app and input bar"
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/long-fu/input_execl
+---
+
+# Input_execl Workflow Feature Implementation Across App And Input Bar
+
+## Action
+
+Follow the feature-implementation-across-app-and-input-bar workflow:
+1. Update core logic in ui/app.py to handle new feature workflow and state.
+2. Update ui/input_bar.py to add new UI elements, validation, or input handling.
+3. Optionally update core/navigator.py if navigation logic is affected.
+4. Optionally update ui/mode_bar.py if mode switching is involved.
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~8x per month
+- Files: ui/app.py, ui/input_bar.py
+
+---
+id: input_execl-workflow-feature-implementation-app-only
+trigger: "when doing feature implementation app only"
+confidence: 0.85
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/long-fu/input_execl
+---
+
+# Input_execl Workflow Feature Implementation App Only
+
+## Action
+
+Follow the feature-implementation-app-only workflow:
+1. Update ui/app.py to implement the new feature or logic.
+2. Optionally update related UI files if needed.
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~7x per month
+- Files: ui/app.py
+
+---
+id: input_execl-workflow-input-bar-ui-enhancement
+trigger: "when doing input bar ui enhancement"
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/long-fu/input_execl
+---
+
+# Input_execl Workflow Input Bar Ui Enhancement
+
+## Action
+
+Follow the input-bar-ui-enhancement workflow:
+1. Update ui/input_bar.py to modify input logic, validation, or UI elements.
+2. Optionally coordinate with ui/app.py if state or callbacks are affected.
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~8x per month
+- Files: ui/input_bar.py
+
+---
+id: input_execl-workflow-feature-implementation-with-navigator
+trigger: "when doing feature implementation with navigator"
+confidence: 0.65
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/long-fu/input_execl
+---
+
+# Input_execl Workflow Feature Implementation With Navigator
+
+## Action
+
+Follow the feature-implementation-with-navigator workflow:
+1. Update core/navigator.py to add or change navigation logic or constants.
+2. Update ui/app.py to integrate the new navigation logic.
+3. Update ui/input_bar.py and/or ui/mode_bar.py if UI for navigation is affected.
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~3x per month
+- Files: core/navigator.py, ui/app.py, ui/input_bar.py
+
+---
+id: input_execl-workflow-fix-input-bar-behavior
+trigger: "when doing fix input bar behavior"
+confidence: 0.75
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/long-fu/input_execl
+---
+
+# Input_execl Workflow Fix Input Bar Behavior
+
+## Action
+
+Follow the fix-input-bar-behavior workflow:
+1. Identify the bug or UX issue.
+2. Update ui/input_bar.py to fix the issue.
+3. Test to ensure the fix resolves the problem.
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~5x per month
+- Files: ui/input_bar.py
+
+---
+id: input_execl-workflow-ci-cd-workflow-update
+trigger: "when doing ci cd workflow update"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/long-fu/input_execl
+---
+
+# Input_execl Workflow Ci Cd Workflow Update
+
+## Action
+
+Follow the ci-cd-workflow-update workflow:
+1. Update .github/workflows/build-exe.yml with new triggers or steps.
+2. Test the workflow by pushing to the relevant branch.
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: .github/workflows/build-exe.yml
+
+---
+id: input_execl-workflow-feature-spec-and-plan-documentation
+trigger: "when doing feature spec and plan documentation"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/long-fu/input_execl
+---
+
+# Input_execl Workflow Feature Spec And Plan Documentation
+
+## Action
+
+Follow the feature-spec-and-plan-documentation workflow:
+1. Create or update markdown files in docs/superpowers/specs or docs/superpowers/plans.
+2. Commit with a descriptive message.
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: docs/superpowers/specs/, docs/superpowers/plans/
+
+---
+id: input_execl-instinct-file-naming
+trigger: "When creating a new file in the codebase"
+confidence: 0.85
+domain: code-style
+source: repo-analysis
+source_repo: long-fu/input_execl
+---
+
+# Input_execl Instinct File Naming
+
+## Action
+
+Name the file using camelCase (e.g., inputBar.py)
+
+## Evidence
+
+- Pattern in namingConventions.files: camelCase
+
+---
+id: input_execl-instinct-function-naming
+trigger: "When defining a new function"
+confidence: 0.85
+domain: code-style
+source: repo-analysis
+source_repo: long-fu/input_execl
+---
+
+# Input_execl Instinct Function Naming
+
+## Action
+
+Use camelCase for function names
+
+## Evidence
+
+- Pattern in namingConventions.functions: camelCase
+
+---
+id: input_execl-instinct-class-naming
+trigger: "When defining a new class"
+confidence: 0.85
+domain: code-style
+source: repo-analysis
+source_repo: long-fu/input_execl
+---
+
+# Input_execl Instinct Class Naming
+
+## Action
+
+Use PascalCase for class names
+
+## Evidence
+
+- Pattern in namingConventions.classes: PascalCase
+
+---
+id: input_execl-instinct-constant-naming
+trigger: "When defining a constant"
+confidence: 0.85
+domain: code-style
+source: repo-analysis
+source_repo: long-fu/input_execl
+---
+
+# Input_execl Instinct Constant Naming
+
+## Action
+
+Use SCREAMING_SNAKE_CASE for constant names
+
+## Evidence
+
+- Pattern in namingConventions.constants: SCREAMING_SNAKE_CASE
+
+---
+id: input_execl-instinct-relative-imports
+trigger: "When importing modules within the package"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: long-fu/input_execl
+---
+
+# Input_execl Instinct Relative Imports
+
+## Action
+
+Use relative imports
+
+## Evidence
+
+- Pattern in importStyle: relative
+
+---
+id: input_execl-instinct-named-exports
+trigger: "When exporting functions or classes"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: long-fu/input_execl
+---
+
+# Input_execl Instinct Named Exports
+
+## Action
+
+Use named exports
+
+## Evidence
+
+- Pattern in exportStyle: named
+
+---
+id: input_execl-instinct-test-location
+trigger: "When adding tests for a feature"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: long-fu/input_execl
+---
+
+# Input_execl Instinct Test Location
+
+## Action
+
+Place test files in a separate location, not mixed with source files
+
+## Evidence
+
+- architecture.testLocation: separate
+- feature-development workflow: filesInvolved includes **/*.test.*
+
+---
+id: input_execl-instinct-test-sequence
+trigger: "When implementing a new feature"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: long-fu/input_execl
+---
+
+# Input_execl Instinct Test Sequence
+
+## Action
+
+First implement the feature, then add tests, then update documentation
+
+## Evidence
+
+- feature-development.commitSequence: Add feature implementation → Add tests for feature → Update documentation
+
+---
+id: input_execl-instinct-commit-format
+trigger: "When making a git commit"
+confidence: 0.9
+domain: git
+source: repo-analysis
+source_repo: long-fu/input_execl
+---
+
+# Input_execl Instinct Commit Format
+
+## Action
+
+Use conventional commit prefixes (feat, fix, ci, docs, chore), followed by a colon and a short description
+
+## Evidence
+
+- commits.prefixes: feat, fix, ci, docs
+- Seen in commit: feat: 新增固定行录入模式 (Ctrl+4)
+- Seen in commit: fix: 固定行模式不再自动递增列号
+
+---
+id: input_execl-instinct-commit-length
+trigger: "When writing a commit message"
+confidence: 0.7
+domain: git
+source: repo-analysis
+source_repo: long-fu/input_execl
+---
+
+# Input_execl Instinct Commit Length
+
+## Action
+
+Keep the commit message concise, around 26 characters on average
+
+## Evidence
+
+- commits.averageLength: 26
+
+---
+id: input_execl-instinct-feature-app-input-bar
+trigger: "When adding a new user-facing feature related to data entry or row/column interaction"
+confidence: 0.95
+domain: workflow
+source: repo-analysis
+source_repo: long-fu/input_execl
+---
+
+# Input_execl Instinct Feature App Input Bar
+
+## Action
+
+Update both ui/app.py and ui/input_bar.py, and optionally core/navigator.py or ui/mode_bar.py if navigation or mode switching is involved
+
+## Evidence
+
+- feature-implementation-across-app-and-input-bar workflow
+- Example commits and files: ui/app.py, ui/input_bar.py
+
+---
+id: input_execl-instinct-feature-app-only
+trigger: "When adding a new data display, record, or undo/redo feature that does not affect the input bar"
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: long-fu/input_execl
+---
+
+# Input_execl Instinct Feature App Only
+
+## Action
+
+Update only ui/app.py (optionally related UI files if needed)
+
+## Evidence
+
+- feature-implementation-app-only workflow
+- Example commits and files: ui/app.py
+
+---
+id: input_execl-instinct-input-bar-enhancement
+trigger: "When improving or fixing the input experience (validation, focus, clearing, new fields)"
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: long-fu/input_execl
+---
+
+# Input_execl Instinct Input Bar Enhancement
+
+## Action
+
+Update ui/input_bar.py and optionally coordinate with ui/app.py if state or callbacks are affected
+
+## Evidence
+
+- input-bar-ui-enhancement workflow
+- Example commits and files: ui/input_bar.py
+
+---
+id: input_execl-instinct-navigation-feature
+trigger: "When adding or changing row/column navigation modes or behaviors"
+confidence: 0.85
+domain: workflow
+source: repo-analysis
+source_repo: long-fu/input_execl
+---
+
+# Input_execl Instinct Navigation Feature
+
+## Action
+
+Update core/navigator.py, ui/app.py, and update ui/input_bar.py or ui/mode_bar.py if UI for navigation is affected
+
+## Evidence
+
+- feature-implementation-with-navigator workflow
+- Example commits and files: core/navigator.py, ui/app.py, ui/input_bar.py, ui/mode_bar.py
+
+---
+id: input_execl-instinct-fix-input-bar
+trigger: "When resolving a specific bug or improving the user experience in the input bar"
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: long-fu/input_execl
+---
+
+# Input_execl Instinct Fix Input Bar
+
+## Action
+
+Update ui/input_bar.py to fix the issue and test to ensure the fix resolves the problem
+
+## Evidence
+
+- fix-input-bar-behavior workflow
+- Example commits and files: ui/input_bar.py
+
+---
+id: input_execl-instinct-ci-cd-update
+trigger: "When adding or modifying automated build/deployment logic"
+confidence: 0.95
+domain: workflow
+source: repo-analysis
+source_repo: long-fu/input_execl
+---
+
+# Input_execl Instinct Ci Cd Update
+
+## Action
+
+Update .github/workflows/build-exe.yml with new triggers or steps and test the workflow
+
+## Evidence
+
+- ci-cd-workflow-update workflow
+- Example commits and files: .github/workflows/build-exe.yml
+
+---
+id: input_execl-instinct-feature-docs
+trigger: "When documenting the design or plan for a new feature"
+confidence: 0.95
+domain: workflow
+source: repo-analysis
+source_repo: long-fu/input_execl
+---
+
+# Input_execl Instinct Feature Docs
+
+## Action
+
+Create or update markdown files in docs/superpowers/specs or docs/superpowers/plans with a descriptive commit message
+
+## Evidence
+
+- feature-spec-and-plan-documentation workflow
+- Example commits and files: docs/superpowers/specs/, docs/superpowers/plans/
+
